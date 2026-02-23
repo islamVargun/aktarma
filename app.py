@@ -144,4 +144,6 @@ def excel_indir():
     return send_file(output, download_name=dosya_adi, as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Port bilgisini Render otomatik atar, o yüzden os.environ kullanmak en sağlıklısıdır
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
