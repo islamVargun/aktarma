@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aktarma Pro v10 - Modüler Sistem</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header-title">🚀 Aktarma Raporu Pro</div>
+      <p class="subtitle">Hızlı Veri Giriş Terminali v10</p>
+
+      <div class="dashboard">
+        <div class="dash-card">
+          <span>Toplam İrsaliye</span>
+          <strong id="dash-irsaliye">0</strong>
+        </div>
+        <div class="dash-card">
+          <span>Toplam Miktar</span>
+          <strong id="dash-miktar">0</strong>
+        </div>
+      </div>
+
+      <div class="live-preview" id="onizlemeMetni">
+        ⚡ Oluşacak Sefer Adı: <em>Bekleniyor...</em>
+      </div>
+
+      <div id="formContainer">
+        <div class="form-row">
+          <div class="form-group" style="flex: 2">
+            <label>Bölge (Şube Adı)</label>
+            <input
+              list="bolgeler"
+              id="bolge"
+              placeholder="Örn: DU, A, B..."
+              autofocus
+            />
+            <datalist id="bolgeler"></datalist>
+          </div>
+
+          <div class="form-group" style="flex: 1.2">
+            <label>Slot & İkame</label>
+            <div class="slot-group">
+              <input type="number" id="slot" value="1" min="1" />
+              <label class="checkbox-group"
+                ><input type="checkbox" id="ikame" /> İKAME</label
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Tarih</label>
+            <input type="date" id="tarih" />
+          </div>
+
+          <div class="form-group">
+            <label>Çıkış Saati</label>
+            <input type="time" id="saat" />
+          </div>
+
+          <div class="form-group">
+            <label>İrsaliye No (9 Hane)</label>
+            <input
+              type="text"
+              id="irsaliye"
+              maxlength="9"
+              placeholder="Örn: 967898"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1.5">
+            <label>Çift Mühür (7 Hane - 3 Hane)</label>
+            <div class="muhur-group">
+              <input
+                type="text"
+                id="muhur1"
+                maxlength="7"
+                placeholder="1234567"
+                style="width: 65%"
+              />
+              <span class="tire">-</span>
+              <input
+                type="text"
+                id="muhur2"
+                maxlength="3"
+                placeholder="123"
+                style="width: 35%"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Miktar</label>
+            <input type="number" id="miktar" placeholder="Adet" />
+          </div>
+
+          <div class="form-group">
+            <label>Araç Plaka</label>
+            <input list="plakalar" id="plaka" placeholder="Seç/Yaz..." />
+            <datalist id="plakalar"></datalist>
+          </div>
+
+          <div class="form-group">
+            <label>Şoför İsim Soyisim</label>
+            <input list="soforler" id="sofor" placeholder="Seç/Yaz..." />
+            <datalist id="soforler"></datalist>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Firma Bilgisi</label>
+            <select id="firma">
+              <option value="KEŞİF">KEŞİF (K)</option>
+              <option value="DOĞANLAR">DOĞANLAR (D)</option>
+              <option value="TURHANLAR">TURHANLAR (T)</option>
+              <option value="GOONTECH">GOONTECH (G)</option>
+              <option value="ÖZPA">ÖZPA (Ö)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Talep Türü</label>
+            <select id="talep">
+              <option value="SÖZLEŞMELİ">SÖZLEŞMELİ (K)</option>
+              <option value="SPOT">SPOT (S)</option>
+              <option value="İKAME(SÖZLEŞMELİ)">İKAME(SÖZLEŞMELİ) (K)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="genelHata" class="error-text">
+          ⚠️ Lütfen eksik alanları doldurun!
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-kaydet" onclick="kaydet()" id="kaydetBtn">
+            KAYDET (Enter)
+          </button>
+          <button class="btn-guncelle" onclick="kaydet()" id="guncelleBtn">
+            ✏️ DEĞİŞİKLİĞİ GÜNCELLE (Enter)
+          </button>
+          <button class="btn-indir" onclick="gercekExcelIndir()">
+            📥 Excel'e Aktar
+          </button>
+          <button class="btn-temizle" onclick="tabloyuSifirla()">
+            🗑️ Tabloyu Temizle
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table id="veriTablosu">
+          <thead>
+            <tr>
+              <th>TARİH</th>
+              <th>BÖLGE (SEFER ADI)</th>
+              <th>ÇIKIŞ SAATİ</th>
+              <th>İRS. NO</th>
+              <th>MÜHÜR</th>
+              <th>MİKTAR</th>
+              <th>ARAÇ PLAKA</th>
+              <th>ŞOFÖR</th>
+              <th>FİRMA</th>
+              <th>TALEP</th>
+              <th>İŞLEM</th>
+            </tr>
+          </thead>
+          <tbody id="tabloGovdesi"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
