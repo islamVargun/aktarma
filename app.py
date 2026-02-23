@@ -1,14 +1,15 @@
+import os
 from flask import Flask, request, jsonify, render_template, send_file
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
-import os
+
 
 app = Flask(__name__)
 
 # Veritabanı Ayarları
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///aktarma.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///aktarma.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -147,3 +148,4 @@ if __name__ == '__main__':
     # Port bilgisini Render otomatik atar, o yüzden os.environ kullanmak en sağlıklısıdır
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
