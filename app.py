@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
-
+ const DATABASE_URL='postgresql://aktarma_db_user:Nv9YsgQhL5FYD6AyuBw8mKs2zAPXMvPd@dpg-d6eag44tgctc738dsf00-a/aktarma_db'
 
 app = Flask(__name__)
 
@@ -148,4 +148,5 @@ if __name__ == '__main__':
     # Port bilgisini Render otomatik atar, o yüzden os.environ kullanmak en sağlıklısıdır
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
