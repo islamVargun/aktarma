@@ -4,12 +4,17 @@ from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
- const DATABASE_URL='postgresql://aktarma_db_user:Nv9YsgQhL5FYD6AyuBw8mKs2zAPXMvPd@dpg-d6eag44tgctc738dsf00-a/aktarma_db'
 
 app = Flask(__name__)
 
-# Veritabanı Ayarları
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///aktarma.db')
+# --- VERİTABANI AYARI ---
+# Render üzerindeki DATABASE_URL'i alır, yoksa yerel sqlite kullanır.
+# ÖNEMLİ: postgres:// ile başlayan URL'i Flask için postgresql:// yapıyoruz.
+uri = os.environ.get('DATABASE_URL', 'sqlite:///aktarma.db')
+if uri and uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -17,22 +22,23 @@ db = SQLAlchemy(app)
 class Rapor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tarih = db.Column(db.String(20))
-    sefer = db.Column(db.String(100))
+    sefer = db.Column(db.String(200)) # Sefer adları uzun olabildiği için artırdım
     kisa_bolge = db.Column(db.String(50))
-    slot = db.Column(db.String(10))
-    saat = db.Column(db.String(10))
-    irsaliye = db.Column(db.String(20), unique=True, nullable=False)
-    tam_muhur = db.Column(db.String(20))
+    slot = db.Column(db.String(20))
+    saat = db.Column(db.String(20))
+    irsaliye = db.Column(db.String(50), unique=True, nullable=False)
+    tam_muhur = db.Column(db.String(50))
     miktar = db.Column(db.Integer)
-    plaka = db.Column(db.String(20))
+    plaka = db.Column(db.String(50))
     sofor = db.Column(db.String(100))
     firma = db.Column(db.String(50))
     talep = db.Column(db.String(50))
 
+# Tabloları oluştur
 with app.app_context():
     db.create_all()
 
-# --- API YOLLARI ---
+# --- YOLLAR (ROUTES) ---
 
 @app.route('/')
 def index():
@@ -40,15 +46,18 @@ def index():
 
 @app.route('/api/veriler', methods=['GET'])
 def verileri_getir():
-    tum_kayitlar = Rapor.query.order_by(Rapor.id.desc()).all()
-    liste = []
-    for k in tum_kayitlar:
-        liste.append({
-            "id": k.id, "tarih": k.tarih, "sefer": k.sefer, "kisaBolge": k.kisa_bolge,
-            "slot": k.slot, "saat": k.saat, "irsaliye": k.irsaliye, "tamMuhur": k.tam_muhur,
-            "miktar": k.miktar, "plaka": k.plaka, "sofor": k.sofor, "firma": k.firma, "talep": k.talep
-        })
-    return jsonify(liste)
+    try:
+        tum_kayitlar = Rapor.query.order_by(Rapor.id.desc()).all()
+        liste = []
+        for k in tum_kayitlar:
+            liste.append({
+                "id": k.id, "tarih": k.tarih, "sefer": k.sefer, "kisaBolge": k.kisa_bolge,
+                "slot": k.slot, "saat": k.saat, "irsaliye": k.irsaliye, "tamMuhur": k.tam_muhur,
+                "miktar": k.miktar, "plaka": k.plaka, "sofor": k.sofor, "firma": k.firma, "talep": k.talep
+            })
+        return jsonify(liste)
+    except Exception as e:
+        return jsonify({"durum": "hata", "mesaj": str(e)}), 500
 
 @app.route('/api/kaydet', methods=['POST'])
 def kaydet():
@@ -71,6 +80,8 @@ def kaydet():
 def guncelle(id):
     veri = request.json
     kayit = Rapor.query.get_or_404(id)
+    
+    # İrsaliye değişmişse çakışma kontrolü
     if kayit.irsaliye != veri['irsaliye']:
         baska_kayit = Rapor.query.filter_by(irsaliye=veri['irsaliye']).first()
         if baska_kayit:
@@ -108,12 +119,9 @@ def sifirla():
         db.session.rollback()
         return jsonify({"durum": "hata"}), 500
 
-# === İŞTE YENİ EKLENEN KUSURSUZ EXCEL İNDİRME API'Sİ ===
 @app.route('/api/excel_indir', methods=['GET'])
 def excel_indir():
     tum_kayitlar = Rapor.query.order_by(Rapor.id.desc()).all()
-    
-    # Verileri Pandas'ın anlayacağı sözlük listesine çeviriyoruz
     veri_listesi = []
     for k in tum_kayitlar:
         veri_listesi.append({
@@ -130,23 +138,14 @@ def excel_indir():
         })
         
     df = pd.DataFrame(veri_listesi)
-    
-    # Excel'i bilgisayara değil, doğrudan RAM'e (belleğe) yazıyoruz
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Aktarma_Raporu')
-        
     output.seek(0)
     
     zaman = datetime.now().strftime("%Y-%m-%d")
-    dosya_adi = f"Aktarma_Raporu_{zaman}.xlsx"
-    
-    # Dosyayı "resmi bir indirme" olarak tarayıcıya yolluyoruz
-    return send_file(output, download_name=dosya_adi, as_attachment=True)
+    return send_file(output, download_name=f"Aktarma_Raporu_{zaman}.xlsx", as_attachment=True)
 
 if __name__ == '__main__':
-    # Port bilgisini Render otomatik atar, o yüzden os.environ kullanmak en sağlıklısıdır
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-
