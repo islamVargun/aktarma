@@ -18,6 +18,32 @@ app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+TM_LISTESI = [
+    "GOP TM", "Avrupa TM", "Düzce TM", "Anadolu TM", "İzmir TM", "Bursa TM",
+    "Antalya TM", "Başiskele TM", "Afyon TM", "Gaziantep TM", "Muğla TM",
+    "Ankara TM", "Adana TM", "Erzurum TM", "Merzifon TM", "Diyarbakir TM"
+]
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        selected_tm = request.form.get('tm_merkezi')
+        
+        # Kullanıcı zaten var mı kontrolü
+        user_exists = User.query.filter_by(email=email).first()
+        if user_exists:
+            return "Bu email zaten kayıtlı!", 400
+            
+        new_user = User(email=email, preferred_tm=selected_tm)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    
+    return render_template('register.html', tm_listesi=TM_LISTESI)
+
 # Veritabanı Tablosunun Tasarımı
 class Rapor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -149,3 +175,4 @@ def excel_indir():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
