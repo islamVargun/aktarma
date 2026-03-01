@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Hesap Ayarları - Aktarma Pro{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-wrapper {
+        min-height: calc(100vh - 60px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .profile-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 48px 42px;
+        max-width: 480px;
+        width: 100%;
+        box-shadow: var(--shadow-lg), var(--shadow-glow);
+        animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .profile-card .profile-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .profile-card .profile-sub {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 32px;
+        font-weight: 500;
+    }
+
+    .profile-section {
+        margin-bottom: 28px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .profile-section:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .profile-section h3 {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .profile-card label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .profile-card input,
+    .profile-card select {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        font-size: 15px;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        transition: all 0.25s;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+        text-transform: none;
+    }
+
+    .profile-card select option {
+        background: var(--bg-card-solid);
+        color: var(--text-primary);
+    }
+
+    .profile-card input:focus,
+    .profile-card select:focus {
+        border-color: var(--accent);
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-glow);
+        background: var(--bg-input-focus);
+    }
+
+    .email-display {
+        background: var(--bg-glass);
+        padding: 14px 16px;
+        border-radius: 12px;
+        color: var(--text-secondary);
+        font-size: 15px;
+        font-weight: 500;
+        border: 1px solid var(--border);
+        margin-bottom: 16px;
+    }
+
+    .profile-card .btn-save {
+        width: 100%;
+        padding: 15px;
+        background: var(--accent-gradient);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: 'Inter', sans-serif;
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .profile-card .btn-save:hover {
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.45);
+        transform: translateY(-2px);
+    }
+
+    .profile-card .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 20px;
+        transition: color 0.2s;
+    }
+
+    .profile-card .btn-back:hover {
+        color: var(--accent-bright);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper">
+    <div class="profile-card">
+        <div class="profile-title">
+            <i data-lucide="user-cog" style="width:24px; height:24px; color: var(--accent);"></i>
+            Hesap Ayarları
+        </div>
+        <div class="profile-sub">Hesap bilgilerinizi güncelleyin</div>
+
+        <form method="POST" action="{{ url_for('profile') }}">
+            <!-- E-Posta (salt okunur) -->
+            <div class="profile-section">
+                <h3><i data-lucide="mail" style="width:16px; height:16px;"></i> E-Posta</h3>
+                <div class="email-display">{{ current_user.email }}</div>
+            </div>
+
+            <!-- TM Güncelleme -->
+            <div class="profile-section">
+                <h3><i data-lucide="map-pin" style="width:16px; height:16px;"></i> Transfer Merkezi</h3>
+                <label for="tm_merkezi">Mevcut TM: {{ current_user.preferred_tm }}</label>
+                <select id="tm_merkezi" name="tm_merkezi">
+                    {% for tm in tm_listesi %}
+                    <option value="{{ tm }}" {% if tm==current_user.preferred_tm %}selected{% endif %}>{{ tm }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Şifre Güncelleme -->
+            <div class="profile-section">
+                <h3><i data-lucide="lock" style="width:16px; height:16px;"></i> Şifre Değiştir</h3>
+                <label for="new_password">Yeni Şifre (Boş bırakırsanız değişmez)</label>
+                <input type="password" id="new_password" name="new_password" placeholder="En az 6 karakter"
+                    minlength="6" />
+            </div>
+
+            <button type="submit" class="btn-save">
+                <i data-lucide="save" style="width:18px; height:18px;"></i>
+                Değişiklikleri Kaydet
+            </button>
+        </form>
+
+        <a href="{{ url_for('index') }}" class="btn-back">
+            <i data-lucide="arrow-left" style="width:14px; height:14px;"></i>
+            Dashboard'a Dön
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Lucide icons init
+    if (window.lucide) lucide.createIcons();
+</script>
+{% endblock %}

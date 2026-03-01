@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Aktarma Pro{% endblock %}</title>
+
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <!-- html5-qrcode for QR scanning -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- Uygulama CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+  <style>
+    /* ─── Premium Dark Navbar ─── */
+    .navbar-custom {
+      background: var(--navbar-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .navbar-custom .navbar-brand {
+      font-weight: 800;
+      font-size: 18px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.3px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar-custom .nav-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .navbar-custom .nav-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-glass);
+      padding: 6px 14px;
+      border-radius: 50px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .navbar-custom .nav-badge:hover {
+      background: var(--bg-glass-hover);
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+
+    .navbar-custom a.nav-badge {
+      cursor: pointer;
+    }
+
+    .navbar-custom .btn-logout {
+      background: rgba(248, 113, 113, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .navbar-custom .btn-logout:hover {
+      background: rgba(248, 113, 113, 0.2);
+      color: #fff;
+      border-color: rgba(248, 113, 113, 0.4);
+    }
+
+    /* ─── Theme Toggle ─── */
+    .theme-toggle {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-glass-hover);
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+
+    /* ─── Flash Messages ─── */
+    .flash-container {
+      max-width: 1300px;
+      margin: 16px auto 0;
+      padding: 0 20px;
+    }
+
+    .flash-container .alert {
+      border-radius: 12px;
+      font-weight: 500;
+      font-size: 13px;
+      border: none;
+    }
+
+    .flash-container .alert-success {
+      background: rgba(52, 211, 153, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    .flash-container .alert-danger {
+      background: rgba(248, 113, 113, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .flash-container .alert-warning {
+      background: rgba(251, 191, 36, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    .flash-container .alert-info {
+      background: rgba(129, 140, 248, 0.1);
+      color: var(--accent-bright);
+      border: 1px solid rgba(129, 140, 248, 0.2);
+    }
+
+    [data-theme="dark"] .flash-container .btn-close {
+      filter: invert(1) brightness(0.7);
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <!-- ─── NAVBAR ─── -->
+  {% if current_user.is_authenticated %}
+  <nav class="navbar navbar-custom">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i data-lucide="rocket" style="width:20px; height:20px;"></i>
+        Aktarma Pro
+      </a>
+      <div class="nav-info">
+        <span class="nav-badge">
+          <i data-lucide="mail" style="width:13px; height:13px;"></i>
+          {{ current_user.email }}
+        </span>
+        <span class="nav-badge">
+          <i data-lucide="map-pin" style="width:13px; height:13px;"></i>
+          {{ current_user.preferred_tm }}
+        </span>
+        <a href="{{ url_for('profile') }}" class="nav-badge" title="Hesap Ayarları">
+          <i data-lucide="settings" style="width:13px; height:13px;"></i>
+          Ayarlar
+        </a>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+          <i data-lucide="sun" style="width:14px; height:14px;" id="themeIconSun"></i>
+          <i data-lucide="moon" style="width:14px; height:14px;" id="themeIconMoon" class="d-none"></i>
+        </button>
+        <a href="{{ url_for('logout') }}" class="btn-logout">
+          <i data-lucide="log-out" style="width:13px; height:13px;"></i>
+          Çıkış
+        </a>
+      </div>
+    </div>
+  </nav>
+  {% endif %}
+
+  <!-- ─── FLASH MESSAGES ─── -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- ─── CONTENT ─── -->
+  {% block content %}{% endblock %}
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Theme Toggle Script -->
+  <script>
+    // Theme management
+    function getTheme() {
+      return localStorage.getItem('aktarma-theme') || 'dark';
+    }
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('aktarma-theme', theme);
+      updateThemeIcons(theme);
+    }
+    function toggleTheme() {
+      const current = getTheme();
+      setTheme(current === 'dark' ? 'light' : 'dark');
+      // Re-init lucide icons after toggle
+      if (window.lucide) lucide.createIcons();
+    }
+    function updateThemeIcons(theme) {
+      const sunIcon = document.getElementById('themeIconSun');
+      const moonIcon = document.getElementById('themeIconMoon');
+      if (sunIcon && moonIcon) {
+        if (theme === 'dark') {
+          sunIcon.classList.remove('d-none');
+          moonIcon.classList.add('d-none');
+        } else {
+          sunIcon.classList.add('d-none');
+          moonIcon.classList.remove('d-none');
+        }
+      }
+    }
+    // Apply saved theme on load
+    (function () {
+      const saved = getTheme();
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+
+    // Init Lucide icons after DOM load
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.lucide) lucide.createIcons();
+      updateThemeIcons(getTheme());
+    });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

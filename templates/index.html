@@ -1,187 +1,320 @@
-<!doctype html>
-<html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aktarma Pro v10 - Modüler Sistem</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% extends "base.html" %}
 
- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header-title">🚀 Aktarma Raporu Pro</div>
-      <p class="subtitle">Hızlı Veri Giriş Terminali v10</p>
+{% block title %}Dashboard - Aktarma Pro{% endblock %}
 
-      <div class="dashboard">
-        <div class="dash-card">
-          <span>Toplam İrsaliye</span>
-          <strong id="dash-irsaliye">0</strong>
-        </div>
-        <div class="dash-card">
-          <span>Toplam Miktar</span>
-          <strong id="dash-miktar">0</strong>
-        </div>
+{% block content %}
+<div style="padding: 20px;">
+  <div class="container">
+    <div class="header-title">Aktarma Raporu Pro</div>
+    <p class="subtitle">Hızlı Veri Giriş Terminali</p>
+
+    <div class="dashboard">
+      <div class="dash-card">
+        <span>Toplam İrsaliye</span>
+        <strong id="dash-irsaliye">0</strong>
       </div>
-
-      <div class="live-preview" id="onizlemeMetni">
-        ⚡ Oluşacak Sefer Adı: <em>Bekleniyor...</em>
-      </div>
-
-      <div id="formContainer">
-        <div class="form-row">
-          <div class="form-group" style="flex: 2">
-            <label>Bölge (Şube Adı)</label>
-            <input
-              list="bolgeler"
-              id="bolge"
-              placeholder="Örn: DU, A, B..."
-              autofocus
-            />
-            <datalist id="bolgeler"></datalist>
-          </div>
-
-          <div class="form-group" style="flex: 1.2">
-            <label>Slot & İkame</label>
-            <div class="slot-group">
-              <input type="number" id="slot" value="1" min="1" />
-              <label class="checkbox-group"
-                ><input type="checkbox" id="ikame" /> İKAME</label
-              >
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Tarih</label>
-            <input type="date" id="tarih" />
-          </div>
-
-          <div class="form-group">
-            <label>Çıkış Saati</label>
-            <input type="time" id="saat" />
-          </div>
-
-          <div class="form-group">
-            <label>İrsaliye No (9 Hane)</label>
-            <input
-              type="text"
-              id="irsaliye"
-              maxlength="9"
-              placeholder="Örn: 967898"
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group" style="flex: 1.5">
-            <label>Çift Mühür (7 Hane - 3 Hane)</label>
-            <div class="muhur-group">
-              <input
-                type="text"
-                id="muhur1"
-                maxlength="7"
-                placeholder="1234567"
-                style="width: 65%"
-              />
-              <span class="tire">-</span>
-              <input
-                type="text"
-                id="muhur2"
-                maxlength="3"
-                placeholder="123"
-                style="width: 35%"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Miktar</label>
-            <input type="number" id="miktar" placeholder="Adet" />
-          </div>
-
-          <div class="form-group">
-            <label>Araç Plaka</label>
-            <input list="plakalar" id="plaka" placeholder="Seç/Yaz..." />
-            <datalist id="plakalar"></datalist>
-          </div>
-
-          <div class="form-group">
-            <label>Şoför İsim Soyisim</label>
-            <input list="soforler" id="sofor" placeholder="Seç/Yaz..." />
-            <datalist id="soforler"></datalist>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Firma Bilgisi</label>
-            <select id="firma">
-              <option value="KEŞİF">KEŞİF (K)</option>
-              <option value="DOĞANLAR">DOĞANLAR (D)</option>
-              <option value="TURHANLAR">TURHANLAR (T)</option>
-              <option value="GOONTECH">GOONTECH (G)</option>
-              <option value="ÖZPA">ÖZPA (Ö)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Talep Türü</label>
-            <select id="talep">
-              <option value="SÖZLEŞMELİ">SÖZLEŞMELİ (K)</option>
-              <option value="SPOT">SPOT (S)</option>
-              <option value="İKAME(SÖZLEŞMELİ)">İKAME(SÖZLEŞMELİ) (K)</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="genelHata" class="error-text">
-          ⚠️ Lütfen eksik alanları doldurun!
-        </div>
-
-        <div class="btn-group">
-          <button class="btn-kaydet" onclick="kaydet()" id="kaydetBtn">
-            KAYDET (Enter)
-          </button>
-          <button class="btn-guncelle" onclick="kaydet()" id="guncelleBtn">
-            ✏️ DEĞİŞİKLİĞİ GÜNCELLE (Enter)
-          </button>
-          <button class="btn-indir" onclick="gercekExcelIndir()">
-            📥 Excel'e Aktar
-          </button>
-          <button class="btn-temizle" onclick="tabloyuSifirla()">
-            🗑️ Tabloyu Temizle
-          </button>
-        </div>
-      </div>
-
-      <div class="table-responsive">
-        <table id="veriTablosu">
-          <thead>
-            <tr>
-              <th>TARİH</th>
-              <th>BÖLGE (SEFER ADI)</th>
-              <th>ÇIKIŞ SAATİ</th>
-              <th>İRS. NO</th>
-              <th>MÜHÜR</th>
-              <th>MİKTAR</th>
-              <th>ARAÇ PLAKA</th>
-              <th>ŞOFÖR</th>
-              <th>FİRMA</th>
-              <th>TALEP</th>
-              <th>İŞLEM</th>
-            </tr>
-          </thead>
-          <tbody id="tabloGovdesi"></tbody>
-        </table>
+      <div class="dash-card">
+        <span>Toplam Miktar</span>
+        <strong id="dash-miktar">0</strong>
       </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-  </body>
-</html>
+    <!-- Tarih Filtresi -->
+    <div class="date-filter">
+      <label>
+        <i data-lucide="calendar" style="width:16px; height:16px;"></i>
+        Gün Seç:
+      </label>
+      <input type="date" id="tarihFiltre" onchange="tariheGoreFiltrele()" />
+      <button class="btn-date active" id="btnBugun" onclick="bugununKayitlari()">
+        <i data-lucide="clock" style="width:14px; height:14px;"></i>
+        Bugün
+      </button>
+      <button class="btn-date" id="btnTumu" onclick="tumKayitlar()">
+        <i data-lucide="list" style="width:14px; height:14px;"></i>
+        Tüm Kayıtlar
+      </button>
+    </div>
 
+    <!-- ═══ QR / Barkod Tarama ═══ -->
+    <div class="qr-section">
+      <div class="qr-header">
+        <h4>
+          <i data-lucide="scan-line" style="width:20px; height:20px; display:inline; vertical-align:-4px;"></i>
+          İrsaliye QR Okuyucu
+        </h4>
+        <span class="qr-badge">Saat + İrsaliye Otomatik Doldurulur</span>
+      </div>
+
+      <div class="qr-controls">
+        <button class="btn-qr-camera" id="btnQrKamera" onclick="qrKameraToggle()">
+          <i data-lucide="camera" style="width:16px; height:16px;"></i>
+          <span id="qrKameraText">Kamera ile Tara</span>
+        </button>
+
+        <label class="btn-qr-upload" for="qrDosya">
+          <i data-lucide="image-plus" style="width:16px; height:16px;"></i>
+          QR Resim Yükle
+        </label>
+        <input type="file" id="qrDosya" accept="image/*" style="display:none;" onchange="qrDosyaOku(event)" />
+      </div>
+
+      <div id="qrReader" class="qr-reader-container"></div>
+
+      <div id="qrSonuc" class="qr-result" style="display:none;">
+        <div class="qr-result-icon">
+          <i data-lucide="check-circle" style="width:20px; height:20px;"></i>
+        </div>
+        <div class="qr-result-text">
+          <span id="qrSonucMesaj"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Otomatik Sefer Adı Gösterimi -->
+    <div class="live-preview" id="onizlemeMetni">
+      <i data-lucide="zap" style="width:16px; height:16px; display:inline; vertical-align:-2px;"></i>
+      Oluşacak Sefer Adı: <strong>{{ sefer_adi }}</strong>
+    </div>
+
+    <div id="formContainer">
+      <div class="form-row">
+        <div class="form-group" style="flex: 2">
+          <label>Bölge (Şube Adı)</label>
+          <input list="bolgeler" id="bolge" placeholder="Örn: DU, A, B..." autofocus />
+          <datalist id="bolgeler"></datalist>
+        </div>
+
+        <div class="form-group" style="flex: 1.2">
+          <label>Slot & İkame</label>
+          <div class="slot-group">
+            <input type="number" id="slot" value="1" min="1" />
+            <label class="checkbox-group"><input type="checkbox" id="ikame" /> İKAME</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tarih</label>
+          <input type="date" id="tarih" />
+        </div>
+
+        <div class="form-group">
+          <label>Çıkış Saati</label>
+          <input type="text" id="saat" placeholder="HH:MM" maxlength="5" />
+        </div>
+
+        <div class="form-group">
+          <label>İrsaliye No (9 Hane)</label>
+          <input type="text" id="irsaliye" maxlength="9" placeholder="Örn: 967898" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex: 1.5">
+          <label>Çift Mühür (7 Hane - 3 Hane)</label>
+          <div class="muhur-group">
+            <input type="text" id="muhur1" maxlength="7" placeholder="1234567" style="width: 65%" />
+            <span class="tire">-</span>
+            <input type="text" id="muhur2" maxlength="3" placeholder="123" style="width: 35%" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Miktar</label>
+          <input type="number" id="miktar" placeholder="Adet" />
+        </div>
+
+        <div class="form-group">
+          <label>Araç Plaka</label>
+          <input list="plakalar" id="plaka" placeholder="Seç/Yaz..." />
+          <datalist id="plakalar"></datalist>
+        </div>
+
+        <div class="form-group">
+          <label>Şoför İsim Soyisim</label>
+          <input list="soforler" id="sofor" placeholder="Seç/Yaz..." />
+          <datalist id="soforler"></datalist>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Firma Bilgisi</label>
+          <select id="firma">
+            <option value="KEŞİF">KEŞİF (K)</option>
+            <option value="DOĞANLAR">DOĞANLAR (D)</option>
+            <option value="TURHANLAR">TURHANLAR (T)</option>
+            <option value="GOONTECH">GOONTECH (G)</option>
+            <option value="ÖZPA">ÖZPA (Ö)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Talep Türü</label>
+          <select id="talep">
+            <option value="SÖZLEŞMELİ">SÖZLEŞMELİ (K)</option>
+            <option value="SPOT">SPOT (S)</option>
+            <option value="İKAME(SÖZLEŞMELİ)">İKAME(SÖZLEŞMELİ) (K)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="genelHata" class="error-text">
+        ⚠️ Lütfen eksik alanları doldurun!
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-kaydet" onclick="kaydet()" id="kaydetBtn">
+          <i data-lucide="save" style="width:18px; height:18px;"></i>
+          KAYDET (Enter)
+        </button>
+        <button class="btn-indir" onclick="gercekExcelIndir()">
+          <i data-lucide="download" style="width:18px; height:18px;"></i>
+          Excel'e Aktar
+        </button>
+        <button class="btn-temizle" onclick="tabloyuSifirla()">
+          <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
+          Temizle
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table id="veriTablosu">
+        <thead>
+          <tr>
+            <th>TARİH</th>
+            <th>BÖLGE (SEFER ADI)</th>
+            <th>ÇIKIŞ SAATİ</th>
+            <th>İRS. NO</th>
+            <th>MÜHÜR</th>
+            <th>MİKTAR</th>
+            <th>ARAÇ PLAKA</th>
+            <th>ŞOFÖR</th>
+            <th>FİRMA</th>
+            <th>TALEP</th>
+            <th>İŞLEM</th>
+          </tr>
+        </thead>
+        <tbody id="tabloGovdesi"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DÜZENLEME MODALI (Blurred Backdrop)
+     ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>
+        <i data-lucide="edit-3" style="width:22px; height:22px; color: var(--warning);"></i>
+        Kaydı Düzenle
+      </h2>
+      <button class="modal-close" onclick="modalKapat()">
+        <i data-lucide="x" style="width:18px; height:18px;"></i>
+      </button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex: 2">
+        <label>Bölge (Şube Adı)</label>
+        <input list="bolgeler" id="m_bolge" placeholder="Örn: DU, A, B..." />
+      </div>
+      <div class="form-group" style="flex: 1">
+        <label>Slot</label>
+        <input type="number" id="m_slot" value="1" min="1" />
+      </div>
+      <div class="form-group">
+        <label>İkame</label>
+        <label class="checkbox-group" style="margin-top:6px;">
+          <input type="checkbox" id="m_ikame" /> İKAME
+        </label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tarih</label>
+        <input type="date" id="m_tarih" />
+      </div>
+      <div class="form-group">
+        <label>Çıkış Saati</label>
+        <input type="text" id="m_saat" placeholder="HH:MM" maxlength="5" />
+      </div>
+      <div class="form-group">
+        <label>İrsaliye No</label>
+        <input type="text" id="m_irsaliye" maxlength="9" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex: 1.5">
+        <label>Mühür</label>
+        <div class="muhur-group">
+          <input type="text" id="m_muhur1" maxlength="7" style="width:65%" />
+          <span class="tire">-</span>
+          <input type="text" id="m_muhur2" maxlength="3" style="width:35%" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Miktar</label>
+        <input type="number" id="m_miktar" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Araç Plaka</label>
+        <input list="plakalar" id="m_plaka" />
+      </div>
+      <div class="form-group">
+        <label>Şoför</label>
+        <input list="soforler" id="m_sofor" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Firma</label>
+        <select id="m_firma">
+          <option value="KEŞİF">KEŞİF (K)</option>
+          <option value="DOĞANLAR">DOĞANLAR (D)</option>
+          <option value="TURHANLAR">TURHANLAR (T)</option>
+          <option value="GOONTECH">GOONTECH (G)</option>
+          <option value="ÖZPA">ÖZPA (Ö)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Talep</label>
+        <select id="m_talep">
+          <option value="SÖZLEŞMELİ">SÖZLEŞMELİ (K)</option>
+          <option value="SPOT">SPOT (S)</option>
+          <option value="İKAME(SÖZLEŞMELİ)">İKAME(SÖZLEŞMELİ) (K)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="modalHata" class="error-text"></div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-save" onclick="modalKaydet()">
+        <i data-lucide="check" style="width:18px; height:18px;"></i>
+        Güncelle
+      </button>
+      <button class="btn-modal-cancel" onclick="modalKapat()">İptal</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const KULLANICI_TM = "{{ user_tm }}";
+</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+<script>
+  if (window.lucide) lucide.createIcons();
+</script>
+{% endblock %}
