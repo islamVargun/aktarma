@@ -21,6 +21,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     preferred_tm = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # İlişki: Bir kullanıcının birden fazla rapor kaydı olabilir
     records = db.relationship("Rapor", backref="user", lazy=True)

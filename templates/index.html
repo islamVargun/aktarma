@@ -25,7 +25,7 @@
         <i data-lucide="calendar" style="width:16px; height:16px;"></i>
         Gün Seç:
       </label>
-      <input type="date" id="tarihFiltre" onchange="tariheGoreFiltrele()" />
+      <input type="text" id="tarihFiltre" placeholder="Tarih seçin..." readonly />
       <button class="btn-date active" id="btnBugun" onclick="bugununKayitlari()">
         <i data-lucide="clock" style="width:14px; height:14px;"></i>
         Bugün
@@ -44,6 +44,19 @@
           İrsaliye QR Okuyucu
         </h4>
         <span class="qr-badge">Saat + İrsaliye Otomatik Doldurulur</span>
+      </div>
+
+      <!-- Barkod Okuyucu Cihaz Girişi (Öncelikli) -->
+      <div class="barcode-scanner-input">
+        <label for="barkodInput">
+          <i data-lucide="scan-barcode" style="width:16px; height:16px; display:inline; vertical-align:-2px;"></i>
+          Barkod Okuyucu Cihaz
+        </label>
+        <div class="barcode-input-wrapper">
+          <input type="text" id="barkodInput" placeholder="Barkod okutun veya QR yapıştırın..." autocomplete="off" />
+          <div class="barcode-pulse"></div>
+        </div>
+        <span class="barcode-hint">Barkod cihazıyla okutun — otomatik algılanır</span>
       </div>
 
       <div class="qr-controls">
@@ -95,7 +108,7 @@
 
         <div class="form-group">
           <label>Tarih</label>
-          <input type="date" id="tarih" />
+          <input type="text" id="tarih" placeholder="Tarih seçin..." readonly />
         </div>
 
         <div class="form-group">
@@ -237,7 +250,7 @@
     <div class="form-row">
       <div class="form-group">
         <label>Tarih</label>
-        <input type="date" id="m_tarih" />
+        <input type="text" id="m_tarih" placeholder="Tarih seçin..." readonly />
       </div>
       <div class="form-group">
         <label>Çıkış Saati</label>
@@ -304,6 +317,56 @@
         Güncelle
       </button>
       <button class="btn-modal-cancel" onclick="modalKapat()">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SİLME ONAY MODALI (Delete Confirmation)
+     ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-card delete-modal-card">
+    <div class="modal-header delete-header">
+      <h2>
+        <i data-lucide="alert-triangle" style="width:24px; height:24px; color: var(--danger);"></i>
+        Seferi Sil
+      </h2>
+      <button class="modal-close" onclick="silmeModalKapat()">
+        <i data-lucide="x" style="width:18px; height:18px;"></i>
+      </button>
+    </div>
+
+    <div class="delete-modal-body">
+      <div class="delete-warning-icon">
+        <i data-lucide="trash-2" style="width:40px; height:40px;"></i>
+      </div>
+      <p class="delete-question">Bu seferi silmek istediğinize emin misiniz?</p>
+      <div class="delete-info">
+        <div class="delete-info-row">
+          <span class="delete-label">Sefer:</span>
+          <span class="delete-value" id="delete-sefer-adi">—</span>
+        </div>
+        <div class="delete-info-row">
+          <span class="delete-label">İrsaliye No:</span>
+          <span class="delete-value" id="delete-irsaliye-no">—</span>
+        </div>
+        <div class="delete-info-row">
+          <span class="delete-label">Tarih:</span>
+          <span class="delete-value" id="delete-tarih">—</span>
+        </div>
+      </div>
+      <p class="delete-warning-text">
+        <i data-lucide="info" style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+        Bu işlem geri alınamaz!
+      </p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-delete" onclick="silmeOnayla()">
+        <i data-lucide="trash-2" style="width:18px; height:18px;"></i>
+        Evet, Sil
+      </button>
+      <button class="btn-modal-cancel" onclick="silmeModalKapat()">İptal</button>
     </div>
   </div>
 </div>

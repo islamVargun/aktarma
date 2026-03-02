@@ -18,7 +18,7 @@
         border: 1px solid var(--border);
         border-radius: 24px;
         padding: 48px 42px;
-        max-width: 480px;
+        max-width: 520px;
         width: 100%;
         box-shadow: var(--shadow-lg), var(--shadow-glow);
         animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -36,26 +36,161 @@
         }
     }
 
-    .profile-card .profile-title {
+    /* ─── Avatar ─── */
+    .profile-avatar-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 28px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--accent-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 900;
+        color: #fff;
+        margin-bottom: 14px;
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+        letter-spacing: -1px;
+        text-transform: uppercase;
+        position: relative;
+    }
+
+    .profile-avatar::after {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        border: 2px solid rgba(129, 140, 248, 0.3);
+    }
+
+    .profile-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .profile-role {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+
+    .profile-member-since {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* ─── Stats ─── */
+    .profile-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 28px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .profile-stat-card {
+        background: var(--bg-glass);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 12px;
+        text-align: center;
+        transition: all 0.25s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .profile-stat-card:nth-child(1)::before {
+        background: var(--accent-gradient);
+    }
+
+    .profile-stat-card:nth-child(2)::before {
+        background: var(--success-gradient);
+    }
+
+    .profile-stat-card:nth-child(3)::before {
+        background: var(--warning-gradient);
+    }
+
+    .profile-stat-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--border-hover);
+    }
+
+    .profile-stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .profile-stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+    }
+
+    .profile-stat-card:nth-child(1) .profile-stat-icon {
+        background: rgba(129, 140, 248, 0.12);
+        color: var(--accent-bright);
+    }
+
+    .profile-stat-card:nth-child(2) .profile-stat-icon {
+        background: rgba(52, 211, 153, 0.12);
+        color: var(--success);
+    }
+
+    .profile-stat-card:nth-child(3) .profile-stat-icon {
+        background: rgba(251, 191, 36, 0.12);
+        color: var(--warning);
+    }
+
+    .profile-stat-value {
         font-size: 24px;
         font-weight: 800;
         color: var(--text-primary);
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        margin-bottom: 2px;
     }
 
-    .profile-card .profile-sub {
-        font-size: 14px;
+    .profile-stat-label {
+        font-size: 10px;
+        font-weight: 700;
         color: var(--text-muted);
-        margin-bottom: 32px;
-        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
     }
 
+    /* ─── Form Sections ─── */
     .profile-section {
-        margin-bottom: 28px;
-        padding-bottom: 28px;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
         border-bottom: 1px solid var(--border);
     }
 
@@ -126,6 +261,13 @@
         font-weight: 500;
         border: 1px solid var(--border);
         margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .email-display i {
+        opacity: 0.5;
     }
 
     .profile-card .btn-save {
@@ -168,18 +310,77 @@
     .profile-card .btn-back:hover {
         color: var(--accent-bright);
     }
+
+    @media screen and (max-width: 768px) {
+        .profile-card {
+            padding: 32px 24px;
+        }
+
+        .profile-stats {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .profile-stat-value {
+            font-size: 20px;
+        }
+
+        .profile-stat-card {
+            padding: 12px 8px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="profile-wrapper">
     <div class="profile-card">
-        <div class="profile-title">
-            <i data-lucide="user-cog" style="width:24px; height:24px; color: var(--accent);"></i>
-            Hesap Ayarları
-        </div>
-        <div class="profile-sub">Hesap bilgilerinizi güncelleyin</div>
 
+        <!-- Avatar & Identity -->
+        <div class="profile-avatar-section">
+            <div class="profile-avatar">
+                {{ current_user.email[0] | upper }}{{ current_user.email[1] | upper if current_user.email|length > 1
+                else '' }}
+            </div>
+            <div class="profile-name">{{ current_user.email }}</div>
+            <div class="profile-role">
+                <i data-lucide="map-pin" style="width:12px; height:12px; display:inline; vertical-align:-1px;"></i>
+                {{ current_user.preferred_tm }}
+            </div>
+            {% if stats and stats.uyelik_tarihi %}
+            <div class="profile-member-since">
+                <i data-lucide="calendar" style="width:12px; height:12px;"></i>
+                Üyelik: {{ stats.uyelik_tarihi }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Stats -->
+        <div class="profile-stats">
+            <div class="profile-stat-card">
+                <div class="profile-stat-icon">
+                    <i data-lucide="file-text" style="width:18px; height:18px;"></i>
+                </div>
+                <div class="profile-stat-value">{{ stats.toplam_kayit if stats else 0 }}</div>
+                <div class="profile-stat-label">Toplam Kayıt</div>
+            </div>
+            <div class="profile-stat-card">
+                <div class="profile-stat-icon">
+                    <i data-lucide="clock" style="width:18px; height:18px;"></i>
+                </div>
+                <div class="profile-stat-value">{{ stats.bugun_kayit if stats else 0 }}</div>
+                <div class="profile-stat-label">Bugünkü</div>
+            </div>
+            <div class="profile-stat-card">
+                <div class="profile-stat-icon">
+                    <i data-lucide="package" style="width:18px; height:18px;"></i>
+                </div>
+                <div class="profile-stat-value">{{ stats.toplam_miktar if stats else 0 }}</div>
+                <div class="profile-stat-label">Toplam Miktar</div>
+            </div>
+        </div>
+
+        <!-- Settings Form -->
         <form method="POST" action="{{ url_for('profile') }}">
             <!-- E-Posta (salt okunur) -->
             <div class="profile-section">

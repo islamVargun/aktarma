@@ -104,6 +104,13 @@ TM_LISTESI = [
 with app.app_context():
     db.create_all()
 
+    # Mevcut DB'ye created_at sütununu ekle (migration)
+    try:
+        db.session.execute(db.text("ALTER TABLE user ADD COLUMN created_at DATETIME"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()  # Sütun zaten varsa hata yut
+
 # ─────────────────────────────────────────────
 # AUTH ROTALARI (Kayıt / Giriş / Çıkış)
 # ─────────────────────────────────────────────
@@ -199,14 +206,28 @@ def profile():
         if new_password:
             if len(new_password) < 6:
                 flash("Şifre en az 6 karakter olmalıdır.", "danger")
-                return render_template("profile.html", tm_listesi=TM_LISTESI)
+                return render_template("profile.html", tm_listesi=TM_LISTESI, stats={})
             current_user.set_password(new_password)
             flash("Şifreniz başarıyla güncellendi!", "success")
 
         db.session.commit()
         return redirect(url_for("profile"))
 
-    return render_template("profile.html", tm_listesi=TM_LISTESI)
+    # Kullanıcı istatistikleri
+    bugun = datetime.now().strftime("%Y-%m-%d")
+    toplam_kayit = Rapor.query.filter_by(user_id=current_user.id).count()
+    bugun_kayit = Rapor.query.filter_by(user_id=current_user.id, tarih=bugun).count()
+    toplam_miktar = db.session.query(db.func.sum(Rapor.miktar)).filter_by(user_id=current_user.id).scalar() or 0
+    uyelik_tarihi = getattr(current_user, 'created_at', None)
+
+    stats = {
+        "toplam_kayit": toplam_kayit,
+        "bugun_kayit": bugun_kayit,
+        "toplam_miktar": toplam_miktar,
+        "uyelik_tarihi": uyelik_tarihi.strftime("%d.%m.%Y") if uyelik_tarihi else "—",
+    }
+
+    return render_template("profile.html", tm_listesi=TM_LISTESI, stats=stats)
 
 
 @app.route("/logout")
@@ -403,29 +424,19 @@ def sifirla():
 def excel_indir():
     """
     Kullanıcının kayıtlarını Excel dosyası olarak indir.
-
-    İş Akışı:
-    1. Veritabanından giriş yapan kullanıcının kayıtlarını çek
-    2. Pandas DataFrame'e dönüştür
-    3. BytesIO ile bellek üstünde Excel dosyası oluştur (openpyxl engine)
-    4. send_file ile kullanıcıya indir
-
-    NOT: Buraya Pandas ile özel formatlama kodlarınızı ekleyebilirsiniz.
-    Örneğin:
-    - Sütun genişlikleri ayarlama
-    - Başlık satırı renklendirme
-    - Koşullu biçimlendirme
-    - Birden fazla sayfa (sheet)
+    ?tarih=YYYY-MM-DD parametresi verilirse sadece o güne ait kayıtlar indirilir.
     """
 
-    # 1) Kullanıcının kayıtlarını DB'den çek
-    tum_kayitlar = (
-        Rapor.query.filter_by(user_id=current_user.id)
-        .order_by(Rapor.id.desc())
-        .all()
-    )
+    # 1) Tarih filtresi
+    tarih_filtre = request.args.get("tarih", "")
+    sorgu = Rapor.query.filter_by(user_id=current_user.id)
 
-    # 2) Veri listesini oluştur (Excel sütun başlıkları burada belirlenir)
+    if tarih_filtre:
+        sorgu = sorgu.filter_by(tarih=tarih_filtre)
+
+    tum_kayitlar = sorgu.order_by(Rapor.id.desc()).all()
+
+    # 2) Veri listesini oluştur
     veri_listesi = []
     for k in tum_kayitlar:
         veri_listesi.append(
@@ -446,45 +457,16 @@ def excel_indir():
     # 3) DataFrame oluştur
     df = pd.DataFrame(veri_listesi)
 
-    # ─── PANDAS İLE ÖZEL FORMATLAMA (İskelet) ───
-    #
-    # Eğer sütun genişliği, renk vs. ayarlamak isterseniz:
-    #
-    # from openpyxl.styles import Font, PatternFill, Alignment
-    #
-    # output = BytesIO()
-    # with pd.ExcelWriter(output, engine='openpyxl') as writer:
-    #     df.to_excel(writer, index=False, sheet_name='Aktarma_Raporu')
-    #     workbook = writer.book
-    #     worksheet = writer.sheets['Aktarma_Raporu']
-    #
-    #     # Başlık satırı stil ayarları
-    #     header_font = Font(bold=True, color="FFFFFF", size=12)
-    #     header_fill = PatternFill(start_color="4F46E5", fill_type="solid")
-    #     for col_num, col_name in enumerate(df.columns, 1):
-    #         cell = worksheet.cell(row=1, column=col_num)
-    #         cell.font = header_font
-    #         cell.fill = header_fill
-    #         cell.alignment = Alignment(horizontal="center")
-    #
-    #     # Sütun genişlikleri otomatik ayarla
-    #     for col in worksheet.columns:
-    #         max_length = max(len(str(cell.value or "")) for cell in col)
-    #         adjusted_width = min(max_length + 4, 40)
-    #         worksheet.column_dimensions[col[0].column_letter].width = adjusted_width
-    #
-    # output.seek(0)
-
-    # 4) Basit Excel oluştur
+    # 4) Excel oluştur
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Aktarma_Raporu")
     output.seek(0)
 
     # 5) Dosya adı: TM_Tarih formatında
-    zaman = datetime.now().strftime("%Y-%m-%d")
+    tarih_etiket = tarih_filtre if tarih_filtre else datetime.now().strftime("%Y-%m-%d")
     tm_kisa = current_user.preferred_tm.replace(" ", "_")
-    dosya_adi = f"Aktarma_Raporu_{tm_kisa}_{zaman}.xlsx"
+    dosya_adi = f"Aktarma_Raporu_{tm_kisa}_{tarih_etiket}.xlsx"
 
     return send_file(output, download_name=dosya_adi, as_attachment=True)
 

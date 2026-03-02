@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════
    AKTARMA PRO — SCRIPT.JS
-   CRUD, Modal Edit, Daily Records, 24h Time
+   CRUD, Modal Edit, Daily Records, 24h Time,
+   Flatpickr Calendar, Delete Modal, Barcode Scanner
    ═══════════════════════════════════════════════════ */
 
 const talepKodlari = { SÖZLEŞMELİ: "K", SPOT: "S", "İKAME(SÖZLEŞMELİ)": "K" };
@@ -57,13 +58,20 @@ const tumSoforler = [
 
 let veriler = [];
 let duzenlenenId = null;
+let silinecekId = null;
 let aktifFiltre = "bugun"; // "bugun" | "tarih" | "tumu"
+
+// ─── FLATPICKR INSTANCES ───
+let fpTarihFiltre = null;
+let fpTarih = null;
+let fpModalTarih = null;
 
 // ─── SAYFA YÜKLENME ───
 window.onload = function () {
+  flatpickrBaslat();
   zamanVeTarihAyarla();
   datalistleriDoldur();
-  tarihFiltresiniAyarla();
+  barkodOkuyucuBaslat();
   bugununKayitlari(); // Varsayılan = bugünün kayıtları
   if (window.lucide) lucide.createIcons();
 };
@@ -72,24 +80,55 @@ function bugunTarih() {
   return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 }
 
+// ─── FLATPICKR BAŞLAT ───
+function flatpickrBaslat() {
+  if (typeof flatpickr === "undefined") return;
+
+  // Ortak ayarlar
+  const ortakAyarlar = {
+    locale: "tr",
+    dateFormat: "Y-m-d",
+    disableMobile: true,
+    theme: "dark",
+  };
+
+  // Tarih Filtresi (Gün Seç)
+  fpTarihFiltre = flatpickr("#tarihFiltre", {
+    ...ortakAyarlar,
+    defaultDate: bugunTarih(),
+    maxDate: "today",
+    onChange: function (selectedDates, dateStr) {
+      if (dateStr) {
+        aktifFiltre = "tarih";
+        butonAktiflik(null);
+        verileriSunucudanCek(dateStr);
+      }
+    },
+  });
+
+  // Form Tarih Alanı
+  fpTarih = flatpickr("#tarih", {
+    ...ortakAyarlar,
+    defaultDate: bugunTarih(),
+  });
+
+  // Modal Tarih Alanı
+  fpModalTarih = flatpickr("#m_tarih", {
+    ...ortakAyarlar,
+  });
+}
+
 function zamanVeTarihAyarla() {
   const simdi = new Date();
-  document.getElementById("tarih").value = bugunTarih();
+  if (fpTarih) {
+    fpTarih.setDate(bugunTarih());
+  } else {
+    document.getElementById("tarih").value = bugunTarih();
+  }
   // 24 saat formatında saat
   const saat = String(simdi.getHours()).padStart(2, "0");
   const dakika = String(simdi.getMinutes()).padStart(2, "0");
   document.getElementById("saat").value = `${saat}:${dakika}`;
-}
-
-function tarihFiltresiniAyarla() {
-  // Tarih filtresini bugüne ayarla, max 1 ay önce
-  const filtre = document.getElementById("tarihFiltre");
-  filtre.value = bugunTarih();
-  // Min: 1 ay önce
-  const birAyOnce = new Date();
-  birAyOnce.setMonth(birAyOnce.getMonth() - 1);
-  filtre.min = birAyOnce.toISOString().split("T")[0];
-  filtre.max = bugunTarih();
 }
 
 function datalistleriDoldur() {
@@ -122,7 +161,8 @@ function butonAktiflik(aktif) {
 
 function bugununKayitlari() {
   aktifFiltre = "bugun";
-  document.getElementById("tarihFiltre").value = bugunTarih();
+  if (fpTarihFiltre) fpTarihFiltre.setDate(bugunTarih());
+  else document.getElementById("tarihFiltre").value = bugunTarih();
   butonAktiflik("btnBugun");
   verileriSunucudanCek(bugunTarih());
 }
@@ -186,9 +226,16 @@ document.getElementById("muhur1").addEventListener("input", function () {
 
 document.addEventListener("keypress", function (e) {
   if (e.key === "Enter") {
-    const modal = document.getElementById("editModal");
-    if (modal.classList.contains("active")) {
+    // Barkod input'unda Enter'a basılırsa barkodu işle
+    if (document.activeElement && document.activeElement.id === "barkodInput") {
+      return; // barkod handler zaten işleyecek
+    }
+    const editModal = document.getElementById("editModal");
+    const deleteModal = document.getElementById("deleteModal");
+    if (editModal.classList.contains("active")) {
       modalKaydet();
+    } else if (deleteModal.classList.contains("active")) {
+      silmeOnayla();
     } else {
       kaydet();
     }
@@ -365,7 +412,9 @@ function satirDuzenle(id) {
 
   duzenlenenId = id;
 
-  document.getElementById("m_tarih").value = veri.tarih;
+  if (fpModalTarih) fpModalTarih.setDate(veri.tarih);
+  else document.getElementById("m_tarih").value = veri.tarih;
+
   document.getElementById("m_bolge").value = veri.kisaBolge;
   document.getElementById("m_slot").value = veri.slot;
   document.getElementById("m_ikame").checked = veri.sefer.includes("IKAME");
@@ -445,29 +494,69 @@ function modalKaydet() {
     });
 }
 
-// Overlay tıklama ile kapat
+// Overlay tıklama ile kapat (Edit Modal)
 document.getElementById("editModal").addEventListener("click", function (e) {
   if (e.target === this) modalKapat();
 });
 
-// ESC ile kapat
+// ═══════════════════════════════════════════
+// SİLME ONAY MODALI
+// ═══════════════════════════════════════════
+
+function satirSil(id) {
+  const veri = veriler.find((v) => v.id === id);
+  if (!veri) return;
+
+  silinecekId = id;
+
+  // Modal içindeki bilgileri doldur
+  document.getElementById("delete-sefer-adi").textContent = veri.sefer;
+  document.getElementById("delete-irsaliye-no").textContent = veri.irsaliye;
+  document.getElementById("delete-tarih").textContent = veri.tarih;
+
+  // Modalı aç
+  document.getElementById("deleteModal").classList.add("active");
+  document.body.style.overflow = "hidden";
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function silmeModalKapat() {
+  document.getElementById("deleteModal").classList.remove("active");
+  document.body.style.overflow = "";
+  silinecekId = null;
+}
+
+function silmeOnayla() {
+  if (!silinecekId) return;
+
+  fetch(`/api/sil/${silinecekId}`, { method: "DELETE" })
+    .then(() => {
+      silmeModalKapat();
+      yenidenYukle();
+    })
+    .catch((err) => console.error(err));
+}
+
+// Overlay tıklama ile kapat (Delete Modal)
+document.getElementById("deleteModal").addEventListener("click", function (e) {
+  if (e.target === this) silmeModalKapat();
+});
+
+// ESC ile her iki modalı kapat
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") {
-    const modal = document.getElementById("editModal");
-    if (modal.classList.contains("active")) modalKapat();
+    const editModal = document.getElementById("editModal");
+    const deleteModal = document.getElementById("deleteModal");
+    if (editModal.classList.contains("active")) modalKapat();
+    if (deleteModal.classList.contains("active")) silmeModalKapat();
   }
 });
 
-// ─── SİL & SIFIRLA ───
-function satirSil(id) {
-  if (confirm("Bu satırı silmek istediğinize emin misiniz?")) {
-    fetch(`/api/sil/${id}`, { method: "DELETE" })
-      .then(() => yenidenYukle())
-      .catch((err) => console.error(err));
-  }
-}
-
+// ─── TABLO SIFIRLA ───
 function tabloyuSifirla() {
+  // Sıfırlama da confirm yerine kendi uyarımızı kullanabilir ama
+  // şimdilik tablo sıfırlama farklı bir akış, confirm kalabilir
   if (confirm("DİKKAT! Tüm tablo silinecek ve veritabanı sıfırlanacak. Emin misiniz?")) {
     fetch("/api/sifirla", { method: "DELETE" })
       .then(() => yenidenYukle())
@@ -475,13 +564,53 @@ function tabloyuSifirla() {
   }
 }
 
-// ─── EXCEL İNDİR ───
+// ─── EXCEL İNDİR (Tarih Filtreli) ───
 function gercekExcelIndir() {
   if (veriler.length === 0) {
     alert("İndirilecek veri bulunamadı!");
     return;
   }
-  window.location.href = "/api/excel_indir";
+
+  let url = "/api/excel_indir";
+
+  if (aktifFiltre === "bugun") {
+    url += "?tarih=" + bugunTarih();
+  } else if (aktifFiltre === "tarih") {
+    const secilen = document.getElementById("tarihFiltre").value;
+    if (secilen) url += "?tarih=" + secilen;
+  }
+  // aktifFiltre === "tumu" → parametresiz (tüm kayıtlar)
+
+  window.location.href = url;
+}
+
+// ═══════════════════════════════════════════
+// BARKOD OKUYUCU CİHAZ DESTEĞİ
+// ═══════════════════════════════════════════
+
+function barkodOkuyucuBaslat() {
+  const barkodInput = document.getElementById("barkodInput");
+  if (!barkodInput) return;
+
+  // Enter tuşuna basıldığında (barkod cihazı otomatik Enter gönderir)
+  barkodInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const veri = this.value.trim();
+      if (veri) {
+        qrVeriIsle(veri);
+        this.value = "";
+      }
+    }
+  });
+
+  // Input'a fokus olduğunda pulse efekti
+  barkodInput.addEventListener("focus", function () {
+    this.parentElement.classList.add("active");
+  });
+  barkodInput.addEventListener("blur", function () {
+    this.parentElement.classList.remove("active");
+  });
 }
 
 // ═══════════════════════════════════════════
