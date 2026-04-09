@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Saat Hesaplama - Aktarma Raporu{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <div class="container-fluid" style="max-width: 1300px;">
+        <div class="header-title">
+            <i data-lucide="clock"
+                style="width:28px; height:28px; display:inline; vertical-align:-3px; color: var(--accent);"></i>
+            Rampa Çıkış Saati Hesaplama
+        </div>
+        <p class="subtitle">Google Drive'dan Giriş Saati ve Miktar sütunlarını kopyalayıp ilgili kutulara yapıştırın.
+        </p>
+
+        <div class="info-box"
+            style="background: rgba(129, 140, 248, 0.1); border: 1px solid rgba(129, 140, 248, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            <strong style="color: var(--accent-bright); font-size: 14px;">💡 Kılavuz</strong>
+            <p style="margin: 5px 0 0; font-size: 13px; color: var(--text-secondary);">
+                1. Drive/Excel'den <strong>Rampa Giriş Saati</strong> kolonunu (sadece verileri) kopyalayıp ilk kutuya
+                yapıştırın.<br>
+                2. Aynı sıra ile <strong>İrs Miktar</strong> kolonunu kopyalayıp ikinci kutuya yapıştırın.<br>
+                3. Sistem satır satır eşleştirip <strong>Rampa Çıkış Saati</strong>'ni üçüncü kutuda verecektir.
+                <br>Hesaplama mantığı: <code>Dakika başına 35 ürün</code> boşaltıldığı varsayılmıştır.<br>
+                <strong>Formül:</strong> <i>İrsaliye Miktarı / 35</i> => Yukarı yuvarlanarak dakikaya çevrilir ve
+                <strong>Giriş Saati</strong>'ne eklenir. <br>
+                <i>Örn: 582 adet / 35 = 16.62 -> 17 dk. (15:13 + 17 dk = 15:30)</i>
+            </p>
+        </div>
+
+        <div class="row">
+            <!-- Sol: 3 Textarea Kolonu -->
+            <div class="col-md-7">
+                <div class="row">
+                    <!-- 1. Giriş Saati Kolonu -->
+                    <div class="col-md-4">
+                        <label
+                            style="font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--text-secondary); text-align: center; width: 100%;">
+                            <i data-lucide="log-in"
+                                style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+                            1. Rampa Giriş Saati
+                        </label>
+                        <textarea id="col-giris" class="form-control text-center" rows="15"
+                            style="background: var(--bg-glass); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; font-family: monospace; font-size: 13px; resize: none; white-space: pre-wrap;"
+                            placeholder="Örn:&#10;15:13&#10;16:24"></textarea>
+                    </div>
+
+                    <!-- 2. Miktar Kolonu -->
+                    <div class="col-md-4">
+                        <label
+                            style="font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--text-secondary); text-align: center; width: 100%;">
+                            <i data-lucide="package"
+                                style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+                            2. İrsaliye Miktar
+                        </label>
+                        <textarea id="col-miktar" class="form-control text-center" rows="15"
+                            style="background: var(--bg-glass); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; font-family: monospace; font-size: 13px; resize: none; white-space: pre-wrap;"
+                            placeholder="Örn:&#10;582&#10;316"></textarea>
+                    </div>
+
+                    <!-- 3. Çıkış Saati Kolonu -->
+                    <div class="col-md-4">
+                        <label
+                            style="font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--success); text-align: center; width: 100%;">
+                            <i data-lucide="log-out"
+                                style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+                            3. Rampa Çıkış Saati
+                        </label>
+                        <div style="position: relative;">
+                            <textarea id="col-cikis" class="form-control text-center" rows="15"
+                                style="background: rgba(52, 211, 153, 0.05); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 12px; font-family: monospace; font-size: 13px; resize: none; white-space: pre-wrap; font-weight: bold;"
+                                placeholder="Sonuçlar..." readonly></textarea>
+                            <button id="copyBtn" onclick="copyResult()" title="Çıkış Saatlerini Kopyala"
+                                style="display:none; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; border: none; padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: 600; align-items: center; gap: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                                <i data-lucide="copy" style="width:14px; height:14px;"></i>
+                                Kopyala
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sağ: Önizleme Tablosu -->
+            <div class="col-md-5">
+                <div style="margin-left: 15px;">
+                    <label style="font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i data-lucide="eye" style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+                        Hesaplanan Tablo (Önizleme)
+                    </label>
+
+                    <div class="table-responsive"
+                        style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-glass);">
+                        <table class="table table-dark table-hover mb-0"
+                            style="background: transparent; font-size: 13px; text-align: center;">
+                            <thead style="position: sticky; top: 0; background: var(--navbar-bg); z-index: 1;">
+                                <tr>
+                                    <th>Giriş Saati</th>
+                                    <th>Miktar</th>
+                                    <th>Çıkış Saati</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultTableBody">
+                                <tr>
+                                    <td colspan="3" style="color: var(--text-secondary); padding: 30px;">
+                                        Henüz eşleşen veri yok.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const colGiris = document.getElementById("col-giris");
+    const colMiktar = document.getElementById("col-miktar");
+    const colCikis = document.getElementById("col-cikis");
+
+    colGiris.addEventListener("input", processData);
+    colMiktar.addEventListener("input", processData);
+
+    // İki textareanın scroll'unu senkronize et
+    colGiris.addEventListener("scroll", function () {
+        colMiktar.scrollTop = this.scrollTop;
+        colCikis.scrollTop = this.scrollTop;
+    });
+    colMiktar.addEventListener("scroll", function () {
+        colGiris.scrollTop = this.scrollTop;
+        colCikis.scrollTop = this.scrollTop;
+    });
+    colCikis.addEventListener("scroll", function () {
+        colGiris.scrollTop = this.scrollTop;
+        colMiktar.scrollTop = this.scrollTop;
+    });
+
+    function processData() {
+        const girisLines = colGiris.value.split('\n');
+        const miktarLines = colMiktar.value.split('\n');
+        const tbody = document.getElementById("resultTableBody");
+
+        let cikisText = "";
+        let tableHTML = "";
+        let validRows = 0;
+
+        // Hangisinde daha çok veri varsa o kadar döneceğiz.
+        const maxLines = Math.max(girisLines.length, miktarLines.length);
+
+        for (let i = 0; i < maxLines; i++) {
+            let tStr = girisLines[i] ? girisLines[i].trim() : "";
+            let qStr = miktarLines[i] ? miktarLines[i].trim() : "";
+
+            let outTime = "";
+
+            if (tStr !== "" || qStr !== "") {
+                let qtyClean = qStr.replace(/[^\d]/g, '');
+                let qty = parseInt(qtyClean);
+
+                // Miktar var, saat geçerli ise hesapla
+                if (!isNaN(qty) && tStr.includes(':')) {
+                    let timeParts = tStr.split(':');
+                    let hours = parseInt(timeParts[0]);
+                    let minutes = parseInt(timeParts[1]);
+
+                    if (!isNaN(hours) && !isNaN(minutes)) {
+                        let addedMins = Math.ceil(qty / 35);
+                        minutes += addedMins;
+
+                        hours += Math.floor(minutes / 60);
+                        minutes = minutes % 60;
+                        hours = hours % 24;
+
+                        let outHours = String(hours).padStart(2, '0');
+                        let outMins = String(minutes).padStart(2, '0');
+                        outTime = `${outHours}:${outMins}`;
+
+                        tableHTML += `<tr>
+                            <td>${tStr}</td>
+                            <td>${qStr}</td>
+                            <td style="color: var(--success); font-weight: bold;">${outTime}</td>
+                        </tr>`;
+                        validRows++;
+                    }
+                } else if (tStr !== "") {
+                    // Eğer sadece saat var, miktar yoksa tabloyaya boş göster.
+                    tableHTML += `<tr>
+                        <td>${tStr}</td>
+                        <td style="color:var(--text-secondary)">-</td>
+                        <td style="color:var(--text-secondary)">-</td>
+                    </tr>`;
+                } else if (qStr !== "") {
+                    tableHTML += `<tr>
+                        <td style="color:var(--text-secondary)">-</td>
+                        <td>${qStr}</td>
+                        <td style="color:var(--text-secondary)">-</td>
+                    </tr>`;
+                }
+            }
+
+            cikisText += outTime + "\n";
+        }
+
+        // Son satırda boşluk / newline fazlalığını temizleyelim ki görsel kirlilik olmasın
+        colCikis.value = cikisText.replace(/\n$/, "");
+
+        if (validRows > 0) {
+            tbody.innerHTML = tableHTML;
+            document.getElementById("copyBtn").style.display = "inline-flex";
+        } else {
+            // Hiç geçerli yoksa bile girilen boş değerler tabloya yansıyabilir 
+            if (tableHTML === "") {
+                tbody.innerHTML = `<tr><td colspan="3" style="color: var(--text-secondary); padding: 30px;">Henüz veri girilmedi.</td></tr>`;
+            } else {
+                tbody.innerHTML = tableHTML;
+            }
+            // Çıkış boşsa kopyala butonunu gizle
+            let hasTrueResult = Array.from(cikisText.split('\n')).some(e => e.trim() !== "");
+            document.getElementById("copyBtn").style.display = hasTrueResult ? "inline-flex" : "none";
+        }
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function copyResult() {
+        colCikis.select();
+        document.execCommand("copy");
+
+        const btn = document.getElementById("copyBtn");
+        const iconSpan = `<i data-lucide="check" style="width:14px; height:14px;"></i> Kopyalandı!`;
+        btn.innerHTML = iconSpan;
+        if (window.lucide) lucide.createIcons();
+
+        setTimeout(() => {
+            btn.innerHTML = `<i data-lucide="copy" style="width:14px; height:14px;"></i> Kopyala`;
+            if (window.lucide) lucide.createIcons();
+        }, 2000);
+    }
+</script>
+{% endblock %}

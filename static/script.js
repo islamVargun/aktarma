@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════
-   AKTARMA PRO — SCRIPT.JS
+   AKTARMA RAPORU — SCRIPT.JS
    CRUD, Modal Edit, Daily Records, 24h Time,
    Flatpickr Calendar, Delete Modal, Barcode Scanner
    ═══════════════════════════════════════════════════ */
 
-const talepKodlari = { SÖZLEŞMELİ: "K", SPOT: "S", "İKAME(SÖZLEŞMELİ)": "K" };
+const talepKodlari = { SÖZLEŞMELİ: "K", SPOT: "S", "İKAME(SÖZLEŞMELİ)": "S" };
 const firmaKodlari = {
   KEŞİF: "K", DOĞANLAR: "D", TURHANLAR: "T", GOONTECH: "G", ÖZPA: "Ö",
 };

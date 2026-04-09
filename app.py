@@ -244,7 +244,27 @@ def logout():
 # ─────────────────────────────────────────────
 
 
+@app.route("/iletisim")
+@login_required
+def iletisim():
+    """İletişim Sayfası"""
+    return render_template("iletisim.html")
+
+
+@app.route("/saat-giris")
+@login_required
+def saat_giris():
+    """Rampa çıkış saati hesaplama aracı"""
+    return render_template("saat_giris.html")
+
+
 @app.route("/")
+def home():
+    """Genel Ana Sayfa"""
+    return render_template("home.html")
+
+
+@app.route("/rapor")
 @login_required
 def index():
     """

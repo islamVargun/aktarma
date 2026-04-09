@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa - Aktarma Raporu{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 75vh;">
+    <div class="text-center"
+        style="padding: 60px 30px; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 900px; width: 100%;">
+        <div style="display: flex; justify-content: center; gap: 15px; align-items: center; margin-bottom: 25px;">
+            <img src="https://logo.clearbit.com/hepsijet.com" alt="Hepsijet" style="height: 48px; border-radius: 8px;"
+                onerror="this.style.display='none'">
+        </div>
+
+        <h1
+            style="font-size: 42px; font-weight: 800; color: var(--text-primary); margin-bottom: 20px; letter-spacing: -1px;">
+            Aktarma Raporu Uygulaması</h1>
+
+        <p
+            style="font-size: 18px; color: var(--text-secondary); max-width: 700px; margin: 0 auto 35px; line-height: 1.6;">
+            Hepsijet operasyonlarının verimliliğini artırmak, araç kabul ve rampa süreçlerini dijitalleştirmek, aktarma
+            verilerini şeffaf ve düzenli bir yapıda takip etmek amacıyla özel olarak geliştirilmiştir.
+        </p>
+
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('index') }}" class="btn btn-primary"
+                style="padding: 12px 30px; font-size: 16px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <i data-lucide="layout-dashboard" style="width:20px; height:20px;"></i>
+                Rapor Modülüne Git
+            </a>
+            <a href="{{ url_for('saat_giris') }}"
+                style="padding: 12px 30px; font-size: 16px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); color: var(--text-primary); text-decoration: none; background: rgba(255,255,255,0.05); transition: all 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <i data-lucide="clock" style="width:20px; height:20px;"></i>
+                Saat Hesaplama
+            </a>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-primary"
+                style="padding: 12px 30px; font-size: 16px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <i data-lucide="log-in" style="width:20px; height:20px;"></i>
+                Sisteme Giriş Yap
+            </a>
+            <a href="{{ url_for('register') }}"
+                style="padding: 12px 30px; font-size: 16px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); color: var(--text-primary); text-decoration: none; background: rgba(255,255,255,0.05); transition: all 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <i data-lucide="user-plus" style="width:20px; height:20px;"></i>
+                Hesap Oluştur
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

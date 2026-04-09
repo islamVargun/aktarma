@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Giriş Yap - Aktarma Pro{% endblock %}
+{% block title %}Giriş Yap - Aktarma Raporu{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -164,7 +164,11 @@
 
 {% block content %}
 <div class="auth-card">
-    <div class="logo">🚀 Aktarma Pro</div>
+    <div class="logo" style="display:flex; align-items:center; justify-content:center; gap: 10px;">
+        <img src="https://logo.clearbit.com/hepsijet.com" alt="Hepsijet" style="height: 28px; border-radius: 4px;"
+            onerror="this.style.display='none'">
+        Aktarma Raporu
+    </div>
     <div class="logo-sub">Hesabınıza giriş yapın</div>
 
     <form method="POST" action="{{ url_for('login') }}">
