@@ -12,20 +12,29 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+    }
+
+    .auth-wrapper {
+        flex: 1;
+        display: flex;
         align-items: center;
         justify-content: center;
         padding: 20px;
     }
 
     .auth-card {
-        background: rgba(17, 24, 39, 0.85);
+        background: var(--bg-glass);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border);
         border-radius: 24px;
         padding: 48px 42px;
         max-width: 420px;
         width: 100%;
+        min-height: 520px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         box-shadow:
             0 25px 60px rgba(0, 0, 0, 0.5),
             0 0 60px rgba(99, 102, 241, 0.05);
@@ -163,27 +172,27 @@
 {% endblock %}
 
 {% block content %}
-<div class="auth-card">
-    <div class="logo" style="display:flex; align-items:center; justify-content:center; gap: 10px;">
-        <img src="https://logo.clearbit.com/hepsijet.com" alt="Hepsijet" style="height: 28px; border-radius: 4px;"
-            onerror="this.style.display='none'">
-        Aktarma Raporu
-    </div>
-    <div class="logo-sub">Hesabınıza giriş yapın</div>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="logo" style="display:flex; align-items:center; justify-content:center; gap: 10px;">
+            Aktarma Raporu
+        </div>
+        <div class="logo-sub">Hesabınıza giriş yapın</div>
 
-    <form method="POST" action="{{ url_for('login') }}">
-        <label for="email">E-posta Adresi</label>
-        <input type="email" id="email" name="email" placeholder="ornek@email.com" required autofocus />
+        <form method="POST" action="{{ url_for('login') }}">
+            <label for="email">E-posta Adresi</label>
+            <input type="email" id="email" name="email" placeholder="ornek@email.com" required autofocus />
 
-        <label for="password">Şifre</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required />
+            <label for="password">Şifre</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" required />
 
-        <button type="submit" class="btn-auth">Giriş Yap</button>
-    </form>
+            <button type="submit" class="btn-auth">Giriş Yap</button>
+        </form>
 
-    <div class="auth-link">
-        Hesabınız yok mu?
-        <a href="{{ url_for('register') }}">Kayıt Ol</a>
+        <div class="auth-link">
+            Hesabınız yok mu?
+            <a href="{{ url_for('register') }}">Kayıt Ol</a>
+        </div>
     </div>
 </div>
 {% endblock %}

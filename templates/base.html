@@ -237,6 +237,28 @@
           <i data-lucide="settings" style="width:13px; height:13px;"></i>
           Ayarlar
         </a>
+        <a href="{{ url_for('iletisim') }}" class="nav-badge" title="İletişim & Hakkımızda">
+          <i data-lucide="users" style="width:13px; height:13px;"></i>
+          İletişim
+        </a>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+          <i data-lucide="sun" style="width:14px; height:14px;" id="themeIconSun"></i>
+          <i data-lucide="moon" style="width:14px; height:14px;" id="themeIconMoon" class="d-none"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+  {% else %}
+  <nav class="navbar navbar-custom">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="{{ url_for('home') }}">
+        <img src="https://logo.clearbit.com/hepsijet.com" alt="Hepsijet" style="height: 24px; border-radius: 4px;"
+          onerror="this.outerHTML='<span style=\'color:#E30A17; font-weight:900\'>hepsiJET</span>'">
+      </a>
+      <div class="nav-info">
+        <a href="{{ url_for('home') }}" class="nav-badge" title="Ana Sayfa">
+          <i data-lucide="home" style="width:13px; height:13px;"></i>
+        </a>
         <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
           <i data-lucide="sun" style="width:14px; height:14px;" id="themeIconSun"></i>
           <i data-lucide="moon" style="width:14px; height:14px;" id="themeIconMoon" class="d-none"></i>
@@ -270,7 +292,7 @@
     <div class="container-fluid d-flex justify-content-between align-items-center flex-wrap" style="gap: 15px;">
 
       <!-- Sol Alt -->
-      <div>
+      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center;">
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('logout') }}" class="btn-logout">
           <i data-lucide="log-out" style="width:13px; height:13px;"></i>
@@ -280,16 +302,16 @@
       </div>
 
       <!-- Orta Alt -->
-      <div class="text-center" style="flex: 1;">
-        <span>Idea by Muhammet Emin Cüre, Developed by İslam Vargün.</span>
-        <a href="{{ url_for('iletisim') }}" title="Geliştirici İletişim Bilgileri">
-          <i data-lucide="contact" style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
-          İletişim & Hakkımızda
-        </a>
+      <div class="text-center" style="flex: 0 1 auto; white-space: nowrap;">
+        <span style="font-size: 13.5px; color: var(--text-secondary);">
+          Idea by <strong style="color: #10b981; font-weight: 700; letter-spacing: 0.2px;">Muhammet Emin Cüre</strong>,
+          Developed by <strong style="color: var(--accent-bright); font-weight: 700; letter-spacing: 0.2px;">İslam
+            Vargün</strong>.
+        </span>
       </div>
 
       <!-- Sağ Alt -->
-      <div style="display: flex; gap: 10px;">
+      <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px;">
         {% if current_user.is_authenticated %}
         <span class="nav-badge" style="margin: 0; background: var(--bg-glass);">
           <i data-lucide="map-pin" style="width:13px; height:13px;"></i>

@@ -4,7 +4,7 @@
 
 {% block content %}
 <div style="padding: 20px;">
-  <div class="container">
+  <div class="container-fluid" style="max-width: 1550px;">
     <div class="header-title">Aktarma Raporu</div>
     <p class="subtitle">Hızlı Veri Giriş Terminali</p>
 
@@ -102,7 +102,11 @@
           <label>Slot & İkame</label>
           <div class="slot-group">
             <input type="number" id="slot" value="1" min="1" />
-            <label class="checkbox-group"><input type="checkbox" id="ikame" /> İKAME</label>
+            <label class="checkbox-group">
+              <input type="checkbox" id="ikame"
+                onchange="document.getElementById('talep').value = this.checked ? 'İKAME(SÖZLEŞMELİ)' : 'SÖZLEŞMELİ';" />
+              İKAME
+            </label>
           </div>
         </div>
 
@@ -242,7 +246,9 @@
       <div class="form-group">
         <label>İkame</label>
         <label class="checkbox-group" style="margin-top:6px;">
-          <input type="checkbox" id="m_ikame" /> İKAME
+          <input type="checkbox" id="m_ikame"
+            onchange="document.getElementById('m_talep').value = this.checked ? 'İKAME(SÖZLEŞMELİ)' : 'SÖZLEŞMELİ';" />
+          İKAME
         </label>
       </div>
     </div>
