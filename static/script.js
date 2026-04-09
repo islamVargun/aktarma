@@ -56,6 +56,71 @@ const tumSoforler = [
   "ALİ KARAKUŞ",
 ];
 
+const aracSoforEslesmesi = {
+  "34BEU820": "LOKMAN ZAMUR", "16FL198": "OĞUZHAN UYSAL", "34GK4636": "EKREM MERMER",
+  "34HFD607": "ÖNDER AKTAŞ", "34GIS783": "TURAN KOYUNCUOĞLU", "34KY1514": "CEM KURBAN",
+  "34GH5559": "YASİN LEYMUN", "35HJ263": "HABİP TURHAN", "41U2396": "ONUR CENGİZ",
+  "34DSS064": "OKAN IŞIK", "34JU5304": "BERKAY DENİZ KAPAKLI", "07HRC18": "EROL ÖZ",
+  "34NG3321": "EMRE ACET", "34BTV486": "MEHMET GÖRMUŞ", "78AAT082": "CAN POYRAZ",
+  "34NB9848": "SERDAR KIVRIM", "34NK0811": "OLGUN GÖL", "34KB0474": "BURAK SATILMIŞ",
+  "16RF150": "YASİN BİLAL POLAT", "45AHV073": "İSMAL ÇAM", "41B3044": "BERKAY KETEN",
+  "01AAS278": "CEMAL KAŞIKÇI", "34TA8984": "İSMAİL LEYMUN", "34DLB367": "ÜNAL DOGAN",
+  "34BRZ173": "YILMAZ KARATAŞ", "34GA8144": "TARIK KUZUCU", "34CLT861": "ADEM HATİPOĞLU",
+  "81ABU206": "OLCAY SIRMA", "34DZR453": "BERKER OZAN TAŞTAN", "34NVS223": "YASİN ÇALIŞKAN",
+  "34ENB197": "KAZIM PETEK", "34AAF383": "FURKAN ÇİTİL", "34LK8572": "ATA",
+  "44PK864": "ADNAN UZUN", "17HK365": "MERT ALIŞ", "34US0141": "ABDULKADİR ŞENGÜL",
+  "34EF5110": "İSMAİL TURHAN", "34CRB733": "NİYAZİ ŞAHİN", "34FIH174": "MEVLÜT İVBAN",
+  "34JL4846": "TARIK KUZUCU", "15ABE160": "ÜNAL DOGAN", "35BMD129": "BURAK BULAY",
+  "78AAT081": "MUSTAFA ÖZCUMUŞ", "06EE730": "ALİM KUZUCU", "34DFH135": "MİRAÇ ÇELİK",
+  "34EOH268": "BURAK TURHAN", "34BB8075": "HAKAN KARADAĞ", "34MYC377": "TİMUÇİN BERBER",
+  "34MCD666": "BURAK BULAY", "34DU9784": "RAMAZAN BOZYEL", "25EE454": "ENES ERSOY",
+  "34PDF190": "BURAK ÜLKER", "34JG8655": "BURAK ELİŞ", "78AAT584": "YUSUF ÇAVLI",
+  "54AES638": "DURAN YAY", "32AAC344": "YAKUP ALTUN", "34VL9466": "YILMAZ KARATAŞ",
+  "16TAG47": "BURAK BERKTAŞ", "34CRK935": "HABİP TURHAN", "10E3813": "SALİHCAN ŞAMARAN",
+  "34TG8360": "ABDULKADİR ŞENGÜL", "34HHZ712": "NİHAT ÖZ", "55APY249": "DOĞAN ÖZ",
+  "34KAK801": "CEMAL KAŞIKÇI", "27ADZ94": "ONUR CENGİZ", "42FJM33": "SERHAT ERGÜL",
+  "71KE235": "MUSTAFA TALUN", "34LR5663": "ÖZGÜR TURHAN", "34GE2097": "MESUT GÜRGÜL",
+  "35KC3726": "ŞENDOĞAN KIZILTAN", "34KB2033": "SERKAN ERDOĞAN", "34HCZ518": "UĞUR OKUR",
+  "34CKE968": "ONUR DEĞİRMENÇİ", "16YF180": "MERTCAN YAMAN", "34YK7074": "YASİN ERDEM",
+  "34MEG176": "KIZIL KAYA", "34EKR662": "GÜRKAN ÇAKIRBEY", "34EVT123": "ABDURAHİM ÖZALP",
+  "34KFT085": "EMİR ÇELİK", "34BCG454": "KEMAL KAŞIKÇI", "06CNZ791": "FURKAN KARA",
+  "34EIM026": "AHMET UÇAR", "34KM5860": "ADNAN UZUN", "34TY8357": "FURKAN KARA",
+  "42AOC27": "HÜSEYİN ACAR", "34MGN278": "UMUT BAYSAL", "34NL1493": "ALİ KARAKUŞ"
+};
+
+const soforAracEslesmesi = {};
+for (const plaka in aracSoforEslesmesi) {
+  soforAracEslesmesi[aracSoforEslesmesi[plaka]] = plaka;
+}
+
+function aracSoforOtoDoldurBaslat() {
+  const alanlar = [
+    { plakaId: "plaka", soforId: "sofor" },
+    { plakaId: "m_plaka", soforId: "m_sofor" }
+  ];
+
+  alanlar.forEach(a => {
+    const plakaInput = document.getElementById(a.plakaId);
+    const soforInput = document.getElementById(a.soforId);
+
+    if (plakaInput && soforInput) {
+      plakaInput.addEventListener("input", function () {
+        const val = this.value.toUpperCase().replace(/\s+/g, '');
+        if (aracSoforEslesmesi[val]) {
+          soforInput.value = aracSoforEslesmesi[val];
+        }
+      });
+
+      soforInput.addEventListener("input", function () {
+        const val = this.value.toUpperCase().trim();
+        if (soforAracEslesmesi[val]) {
+          plakaInput.value = soforAracEslesmesi[val];
+        }
+      });
+    }
+  });
+}
+
 let veriler = [];
 let duzenlenenId = null;
 let silinecekId = null;
@@ -72,6 +137,7 @@ window.onload = function () {
   zamanVeTarihAyarla();
   datalistleriDoldur();
   barkodOkuyucuBaslat();
+  aracSoforOtoDoldurBaslat();
   bugununKayitlari(); // Varsayılan = bugünün kayıtları
   if (window.lucide) lucide.createIcons();
 };
