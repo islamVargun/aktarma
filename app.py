@@ -10,6 +10,7 @@ Lojistik/Kargo Operasyonları Uygulaması (Excel Aktarma Botu)
 """
 
 import os
+import io
 from datetime import datetime
 from io import BytesIO
 
@@ -256,6 +257,185 @@ def iletisim():
 def saat_giris():
     """Rampa çıkış saati hesaplama aracı"""
     return render_template("saat_giris.html")
+
+
+# ─────────────────────────────────────────────
+# SPOT SAYFASI
+# ─────────────────────────────────────────────
+
+KAMYONET_PLAKALAR = {
+    "34CRK935", "15ABE160", "01AAS278", "34MLR009", "34ETN296",
+    "35BMD129", "34MTC263", "34HS3526", "34MYC377", "34TA8984",
+    "34MCD666", "34MEG176", "34JC9704", "34KJ5964",
+}
+
+
+def spot_arac_tipi(plaka):
+    return "KAMYONET" if plaka.upper().strip() in KAMYONET_PLAKALAR else "PANELVAN"
+
+
+def spot_varis_bul(sefer):
+    """Sefer adından varış noktasını çıkar.
+    Örn: 'Samandıra TM_Pendik_Slot03_S_K_17HK365' → 'PENDİK'
+    """
+    parcalar = sefer.split("_")
+    if len(parcalar) >= 2:
+        varis = parcalar[1].strip()
+        if "(" in varis:
+            varis = varis.split("(")[0].strip()
+        return varis.upper()
+    return ""
+
+
+def spot_navlun_hesapla(varis, arac_tipi):
+    """Varış ve araç tipine göre navlun hesapla."""
+    varis_up = varis.upper()
+    if "EBEBEK" in varis_up:
+        return 3750
+    if "MANGO" in varis_up or "GEBZE" in varis_up:
+        return 3450 if arac_tipi == "KAMYONET" else 3200
+    return 2750 if arac_tipi == "KAMYONET" else 2500
+
+
+@app.route("/spot")
+@login_required
+def spot():
+    """Spot Tablosu Sayfası"""
+    return render_template("spot.html", user_tm=current_user.preferred_tm)
+
+
+@app.route("/api/spot_veriler", methods=["GET"])
+@login_required
+def spot_veriler():
+    """SPOT kayıtlarını dönüştürülmüş formatta döndür."""
+    try:
+        tarih_filtre = request.args.get("tarih", "")
+        sorgu = Rapor.query.filter_by(user_id=current_user.id, talep="SPOT")
+
+        if tarih_filtre:
+            sorgu = sorgu.filter_by(tarih=tarih_filtre)
+
+        kayitlar = sorgu.order_by(Rapor.id.desc()).all()
+        liste = []
+
+        for k in kayitlar:
+            varis = spot_varis_bul(k.sefer or "")
+            arac = spot_arac_tipi(k.plaka or "")
+            navlun = spot_navlun_hesapla(varis, arac)
+
+            tarih_formatted = ""
+            if k.tarih:
+                try:
+                    parcalar = k.tarih.split("-")
+                    if len(parcalar) == 3:
+                        tarih_formatted = f"{parcalar[2]}.{parcalar[1]}"
+                except Exception:
+                    tarih_formatted = k.tarih
+
+            irsaliye_formatted = ""
+            if k.irsaliye:
+                rakamlar = "".join(c for c in k.irsaliye if c.isdigit())
+                if len(rakamlar) >= 6:
+                    irsaliye_formatted = f"HJI202600{rakamlar[-7:]}"
+                else:
+                    irsaliye_formatted = f"HJI202600{rakamlar}"
+
+            firma = k.firma or ""
+
+            liste.append({
+                "bolge": "İSTANBUL ANADOLU",
+                "tarih": tarih_formatted,
+                "gorev": "RİNG",
+                "cikis": current_user.preferred_tm or "SAMANDIRA TM",
+                "ugrama": "YOK",
+                "varis": varis,
+                "plaka": k.plaka or "",
+                "aracTipi": arac,
+                "navlun": navlun,
+                "seferTipi": "SEFERLİK",
+                "ekMaliyet": 0,
+                "ekMaliyetNedeni": "YOK",
+                "toplam": navlun,
+                "tedarikciFirma": firma,
+                "irsaliye": irsaliye_formatted,
+            })
+
+        return jsonify(liste)
+    except Exception as e:
+        return jsonify({"durum": "hata", "mesaj": str(e)}), 500
+
+
+@app.route("/api/spot_excel", methods=["GET"])
+@login_required
+def spot_excel_indir():
+    """Spot tablosunu Excel olarak indir."""
+    try:
+        tarih_filtre = request.args.get("tarih", "")
+        sorgu = Rapor.query.filter_by(user_id=current_user.id, talep="SPOT")
+
+        if tarih_filtre:
+            sorgu = sorgu.filter_by(tarih=tarih_filtre)
+
+        kayitlar = sorgu.order_by(Rapor.id.asc()).all()
+        satirlar = []
+
+        for k in kayitlar:
+            varis = spot_varis_bul(k.sefer or "")
+            arac = spot_arac_tipi(k.plaka or "")
+            navlun = spot_navlun_hesapla(varis, arac)
+
+            tarih_formatted = ""
+            if k.tarih:
+                try:
+                    parcalar = k.tarih.split("-")
+                    if len(parcalar) == 3:
+                        tarih_formatted = f"{parcalar[2]}.{parcalar[1]}"
+                except Exception:
+                    tarih_formatted = k.tarih
+
+            irsaliye_formatted = ""
+            if k.irsaliye:
+                rakamlar = "".join(c for c in k.irsaliye if c.isdigit())
+                if len(rakamlar) >= 6:
+                    irsaliye_formatted = f"HJI202600{rakamlar[-7:]}"
+                else:
+                    irsaliye_formatted = f"HJI202600{rakamlar}"
+
+            satirlar.append({
+                "BÖLGE": "İSTANBUL ANADOLU",
+                "TARİH": tarih_formatted,
+                "GÖREV": "RİNG",
+                "ÇIKIŞ": current_user.preferred_tm or "SAMANDIRA TM",
+                "UĞRAMA": "YOK",
+                "VARIŞ": varis,
+                "PLAKA": k.plaka or "",
+                "ARAÇ TİPİ": arac,
+                "NAVLUN": f"₺ {navlun:,.2f}".replace(",", "."),
+                "SEFER TİPİ": "SEFERLİK",
+                "EK MALİYET": "₺ 0",
+                "EK MALİYET NEDENİ": "YOK",
+                "TOPLAM": f"₺ {navlun:,.2f}".replace(",", "."),
+                "TEDARİKÇİ FİRMA": k.firma or "",
+                "İRSALİYE": irsaliye_formatted,
+            })
+
+        df = pd.DataFrame(satirlar)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Spot Rapor")
+        output.seek(0)
+
+        bugun = datetime.now().strftime("%d.%m.%Y")
+        dosya_adi = f"Spot_Rapor_{bugun}.xlsx"
+
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=dosya_adi,
+        )
+    except Exception as e:
+        return jsonify({"durum": "hata", "mesaj": str(e)}), 500
 
 
 @app.route("/")
