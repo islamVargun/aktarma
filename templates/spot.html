@@ -4,79 +4,106 @@
 
 {% block content %}
 <div style="padding: 20px;">
-  <div class="container">
-    <div class="header-title">Spot Raporu</div>
-    <p class="subtitle">SPOT kayıtlarını otomatik dönüştürülmüş tablo formatında görüntüleyin</p>
+    <div class="container-fluid" style="max-width: 1400px;">
+        <div class="header-title">
+            <i data-lucide="zap"
+                style="width:28px; height:28px; display:inline; vertical-align:-3px; color: var(--accent);"></i>
+            Spot Raporu Oluşturucu
+        </div>
+        <p class="subtitle">Excel'den kopyaladığınız listeyi buraya yapıştırarak otomatik Spot Raporu tablosu oluşturun.
+        </p>
 
-    <div class="dashboard">
-      <div class="dash-card">
-        <span>Spot Kayıt</span>
-        <strong id="spot-kayit">0</strong>
-      </div>
-      <div class="dash-card">
-        <span>Toplam Navlun</span>
-        <strong id="spot-navlun">₺0</strong>
-      </div>
-    </div>
+        <div class="info-box"
+            style="background: rgba(129, 140, 248, 0.1); border: 1px solid rgba(129, 140, 248, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            <strong style="color: var(--accent-bright); font-size: 14px;">💡 Kılavuz</strong>
+            <p style="margin: 5px 0 0; font-size: 13px; color: var(--text-secondary);">
+                Lütfen Excel'deki tablonun tamamını (veya ilgili sütunları) kopyalayıp aşağıdaki kutuya yapıştırın.<br>
+                Sütunların sırası şuna benzer olmalıdır: <strong>Sefer Adı | İrsaliye No | ... | ... | Plaka | Sürücü Adı | Tedarikçi Firma | Görev Tipi (SÖZLEŞMELİ / SPOT)</strong>.<br>
+                Sistem sadece satırda <strong>SPOT</strong> geçen kayıtları filtreler ve istenen tabloya dönüştürür.<br>
+                İşlem sonucunda oluşan tabloyu doğrudan kopyalayabilir veya Excel olarak indirebilirsiniz.
+            </p>
+        </div>
 
-    <!-- Tarih Filtresi -->
-    <div class="date-filter">
-      <label>
-        <i data-lucide="calendar" style="width:16px; height:16px;"></i>
-        Gün Seç:
-      </label>
-      <input type="date" id="spotTarihFiltre" onchange="spotTariheGore()" />
-      <button class="btn-date active" id="btnSpotBugun" onclick="spotBugun()">
-        <i data-lucide="clock" style="width:14px; height:14px;"></i>
-        Bugün
-      </button>
-      <button class="btn-date" id="btnSpotTumu" onclick="spotTumu()">
-        <i data-lucide="list" style="width:14px; height:14px;"></i>
-        Tüm Kayıtlar
-      </button>
-    </div>
+        <div class="row">
+            <!-- Sol: Veri Girişi -->
+            <div class="col-md-3">
+                <label
+                    style="font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--text-secondary); text-align: center; width: 100%;">
+                    <i data-lucide="clipboard-paste"
+                        style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+                    Excel Verisi Yapıştır
+                </label>
+                <textarea id="spot-input" class="form-control" rows="20"
+                    style="background: var(--bg-glass); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; font-size: 11px; resize: none; white-space: pre; overflow-wrap: normal; overflow-x: auto;"
+                    placeholder="Verileri buraya yapıştırın..."></textarea>
+            </div>
 
-    <div class="btn-group" style="margin-bottom: 20px;">
-      <button class="btn-indir" onclick="spotExcelIndir()">
-        <i data-lucide="download" style="width:18px; height:18px;"></i>
-        Spot Excel İndir
-      </button>
-    </div>
+            <!-- Sağ: Önizleme Tablosu -->
+            <div class="col-md-9">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">
+                        <i data-lucide="eye" style="width:14px; height:14px; display:inline; vertical-align:-2px;"></i>
+                        Hesaplanan Tablo (<span id="spot-kayit-sayisi">0</span> kayıt, <span id="spot-toplam-navlun">₺0,00</span>)
+                    </label>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-sm btn-outline-light" id="btn-kopyala" onclick="copyTableText()"
+                            style="font-size: 12px; border-radius: 8px; display: none;">
+                            <i data-lucide="copy" style="width:14px; height:14px;"></i> Sonucu Kopyala
+                        </button>
+                        <button class="btn btn-sm btn-success" id="btn-excel" onclick="downloadExcel()"
+                            style="font-size: 12px; border-radius: 8px; display: none; background: var(--success); color: #000; border: none; font-weight: 600;">
+                            <i data-lucide="download" style="width:14px; height:14px;"></i> Excel İndir
+                        </button>
+                    </div>
+                </div>
 
-    <div class="table-responsive">
-      <table id="spotTablosu" class="spot-table">
-        <thead>
-          <tr>
-            <th>BÖLGE</th>
-            <th>TARİH</th>
-            <th>GÖREV</th>
-            <th>ÇIKIŞ</th>
-            <th>UĞRAMA</th>
-            <th>VARIŞ</th>
-            <th>PLAKA</th>
-            <th>ARAÇ TİPİ</th>
-            <th>NAVLUN</th>
-            <th>SEFER TİPİ</th>
-            <th>EK MALİYET</th>
-            <th>EK MALİYET NEDENİ</th>
-            <th>TOPLAM</th>
-            <th>TEDARİKÇİ FİRMA</th>
-            <th>İRSALİYE</th>
-          </tr>
-        </thead>
-        <tbody id="spotTabloGovdesi"></tbody>
-      </table>
+                <div class="table-responsive"
+                    style="max-height: 500px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-glass);">
+                    <table class="table table-dark table-hover mb-0 spot-table"
+                        style="background: transparent; text-align: center; white-space: nowrap;">
+                        <thead style="position: sticky; top: 0; background: var(--navbar-bg); z-index: 1;">
+                            <tr>
+                                <th>BÖLGE</th>
+                                <th>TARİH</th>
+                                <th>GÖREV</th>
+                                <th>ÇIKIŞ</th>
+                                <th>UĞRAMA</th>
+                                <th>VARIŞ</th>
+                                <th>PLAKA</th>
+                                <th>ARAÇ TİPİ</th>
+                                <th>NAVLUN</th>
+                                <th>SEFER TİPİ</th>
+                                <th>EK MALİYET</th>
+                                <th>EK MAL. NEDENİ</th>
+                                <th>TOPLAM</th>
+                                <th>TEDARİKÇİ FİRMA</th>
+                                <th>İRSALİYE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="spotTabloGovdesi">
+                            <tr>
+                                <td colspan="15" style="color: var(--text-secondary); padding: 50px;">
+                                    Henüz veri girilmedi veya "SPOT" kaydı bulunamadı.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
-  </div>
 </div>
+<!-- Gizli textarea (kopyalama için) -->
+<textarea id="hidden-copy-area" style="position: absolute; left: -9999px;"></textarea>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-  const KULLANICI_TM = "{{ user_tm }}";
+    const KULLANICI_TM = "{{ user_tm }}";
 </script>
 <script src="{{ url_for('static', filename='spot.js') }}"></script>
 <script>
-  if (window.lucide) lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
 </script>
 {% endblock %}
