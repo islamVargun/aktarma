@@ -32,9 +32,7 @@ function getTodayFormatted() {
 function processSpotData() {
     const rawData = document.getElementById("spot-input").value;
     const lines = rawData.split("\n");
-    parsedSpotData = [];
-    
-    let spotMap = new Map();
+    let groupedByPlaka = new Map();
 
     const todayStr = getTodayFormatted();
     const currentTM = (typeof KULLANICI_TM !== 'undefined' && KULLANICI_TM) ? KULLANICI_TM : "SAMANDIRA TM";
@@ -62,87 +60,98 @@ function processSpotData() {
         let firma = cols.length > 6 ? cols[6].trim() : "";
 
         if (firma === "-") firma = "";
-
-        let sefer_upper = sefer.toUpperCase();
-
-        // Varış bul (Görsel gösterim için ilkini kullanacağız)
-        let varis = "";
-        let sefer_parts = sefer.split("_");
-        if (sefer_parts.length >= 2) {
-            let p2 = sefer_parts[1].trim();
-            if (p2.includes("(")) {
-                varis = p2.split("(")[0].trim().toUpperCase();
-            } else {
-                varis = p2.toUpperCase();
-            }
-        }
-
-        // Araç tipi
-        let aracTipi = "PANELVAN";
         let plaka_clean = plaka.replace(/\s+/g, "").toUpperCase();
-        if (KAMYONET_PLAKALAR.includes(plaka_clean)) {
+
+        if (!groupedByPlaka.has(plaka_clean)) {
+            groupedByPlaka.set(plaka_clean, []);
+        }
+        groupedByPlaka.get(plaka_clean).push({
+            sefer: sefer,
+            sefer_upper: sefer.toUpperCase(),
+            irsaliye: irsaliye_raw,
+            firma: firma
+        });
+    }
+
+    parsedSpotData = [];
+
+    for (let [plaka, rows] of groupedByPlaka) {
+        let combinedSefer = rows.map(r => r.sefer_upper).join(" ");
+        let isUgramali = combinedSefer.includes("BİRLEŞTİRME");
+        
+        // Araç Tipi
+        let aracTipi = "PANELVAN";
+        if (KAMYONET_PLAKALAR.includes(plaka)) {
             aracTipi = "KAMYONET";
         }
-
-        // Plaka Map kontrolü (Birleştirme mükerrer satırları engellemek için)
-        if (spotMap.has(plaka_clean)) {
-            let existing = spotMap.get(plaka_clean);
-            let combinedSefer = existing.sefer_upper + " " + sefer_upper;
-            
-            // Fiyatı ve Uğramayı tekrar hesapla
-            let isUgramali = combinedSefer.includes("BİRLEŞTİRME");
-            let ekMaliyet = isUgramali ? 1000 : 0;
-            let ekMaliyetNedeni = isUgramali ? "BİRLEŞTİRME/UĞRAMA" : "YOK";
-            
-            let baseNavlun = 0;
-            if (combinedSefer.includes("EBEBEK")) {
-                baseNavlun = (aracTipi === "KAMYONET") ? 3750 : 2500;
-            } else if (combinedSefer.includes("MANGO") || combinedSefer.includes("GEBZE")) {
-                baseNavlun = (aracTipi === "KAMYONET") ? 3450 : 3200;
-            } else {
-                baseNavlun = (aracTipi === "KAMYONET") ? 2750 : 2500;
-            }
-
-            existing.sefer_upper = combinedSefer;
-            existing.navlun = baseNavlun;
-            existing.ekMaliyet = ekMaliyet;
-            existing.ekMaliyetNedeni = ekMaliyetNedeni;
-            existing.toplam = baseNavlun + ekMaliyet;
-            
-            spotMap.set(plaka_clean, existing);
-            continue; // Satırı atla, zaten mapte güncellendi.
-        }
-
-        // Yeni araç için hesaplamalar
-        let isUgramali = sefer_upper.includes("BİRLEŞTİRME");
-        let ekMaliyet = isUgramali ? 1000 : 0;
-        let ekMaliyetNedeni = isUgramali ? "BİRLEŞTİRME/UĞRAMA" : "YOK";
-
+        
+        // Base Navlun
         let baseNavlun = 0;
-        if (sefer_upper.includes("EBEBEK")) {
+        if (combinedSefer.includes("EBEBEK")) {
             baseNavlun = (aracTipi === "KAMYONET") ? 3750 : 2500;
-        } else if (sefer_upper.includes("MANGO") || sefer_upper.includes("GEBZE")) {
+        } else if (combinedSefer.includes("MANGO") || combinedSefer.includes("GEBZE")) {
             baseNavlun = (aracTipi === "KAMYONET") ? 3450 : 3200;
         } else {
             baseNavlun = (aracTipi === "KAMYONET") ? 2750 : 2500;
         }
-
-        // İrsaliye formati
-        let irsaliye_clean = irsaliye_raw.replace(/\D/g, "");
+        
+        // Ek Maliyet
+        let ekMaliyet = isUgramali ? 1000 : 0;
+        let ekMaliyetNedeni = isUgramali ? "BİRLEŞTİRME/UĞRAMA" : "YOK";
+        
+        // Varis ve Uğrama Bulma
+        let varis = "";
+        let ugrama = "YOK";
+        
+        if (isUgramali) {
+            let birlestirmeRow = rows.find(r => r.sefer_upper.includes("BİRLEŞTİRME"));
+            if (birlestirmeRow) {
+                let s_parts = birlestirmeRow.sefer.split("_");
+                let ilkSube = "";
+                if (s_parts.length >= 2) {
+                    ilkSube = s_parts[1].split("(")[0].trim().toUpperCase();
+                }
+                
+                let match = birlestirmeRow.sefer_upper.match(/BİRLEŞTİRME\s*\/\s*([^)]+)/);
+                if (match && match[1]) {
+                    varis = match[1].trim(); // Örn: EBEBEK
+                    ugrama = ilkSube; // Örn: GEBZE
+                } else {
+                    varis = ilkSube;
+                    ugrama = "BİRLEŞTİRME";
+                }
+            }
+        } else {
+            let s_parts = rows[0].sefer.split("_");
+            if (s_parts.length >= 2) {
+                varis = s_parts[1].split("(")[0].trim().toUpperCase();
+            }
+        }
+        
+        // Irsaliye Format
+        let irsaliye_clean = rows[0].irsaliye.replace(/\D/g, "");
         if (irsaliye_clean.length >= 7) {
             irsaliye_clean = irsaliye_clean.substring(irsaliye_clean.length - 7);
         }
         let formatted_irsaliye = irsaliye_clean ? "HJI202600" + irsaliye_clean : "";
+        
+        // Firma (İlk dolu olanı al)
+        let firma = "";
+        for (let r of rows) {
+            if (r.firma) {
+                firma = r.firma;
+                break;
+            }
+        }
 
-        spotMap.set(plaka_clean, {
-            sefer_upper: sefer_upper,
+        parsedSpotData.push({
             bolge: "İSTANBUL ANADOLU",
             tarih: todayStr,
             gorev: "RİNG",
             cikis: currentTM,
-            ugrama: "YOK",
+            ugrama: ugrama,
             varis: varis,
-            plaka: plaka_clean,
+            plaka: plaka,
             aracTipi: aracTipi,
             navlun: baseNavlun,
             seferTipi: "SEFERLİK",
@@ -154,7 +163,6 @@ function processSpotData() {
         });
     }
 
-    parsedSpotData = Array.from(spotMap.values());
     renderTable();
 }
 
