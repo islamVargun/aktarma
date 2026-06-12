@@ -260,6 +260,16 @@ def saat_giris():
 
 
 # ─────────────────────────────────────────────
+# YILAN OYUNU (Easter Egg 🐍)
+# ─────────────────────────────────────────────
+
+@app.route("/snack")
+def snack_game():
+    """Gizli yılan oyunu sayfası"""
+    return render_template("snack.html")
+
+
+# ─────────────────────────────────────────────
 # SPOT SAYFASI (Frontend-Driven)
 # ─────────────────────────────────────────────
 
