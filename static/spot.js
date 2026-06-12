@@ -33,6 +33,8 @@ function processSpotData() {
     const rawData = document.getElementById("spot-input").value;
     const lines = rawData.split("\n");
     parsedSpotData = [];
+    
+    let spotMap = new Map();
 
     const todayStr = getTodayFormatted();
     const currentTM = (typeof KULLANICI_TM !== 'undefined' && KULLANICI_TM) ? KULLANICI_TM : "SAMANDIRA TM";
@@ -61,7 +63,9 @@ function processSpotData() {
 
         if (firma === "-") firma = "";
 
-        // Varış bul
+        let sefer_upper = sefer.toUpperCase();
+
+        // Varış bul (Görsel gösterim için ilkini kullanacağız)
         let varis = "";
         let sefer_parts = sefer.split("_");
         if (sefer_parts.length >= 2) {
@@ -80,15 +84,47 @@ function processSpotData() {
             aracTipi = "KAMYONET";
         }
 
-        // Navlun
-        let navlun = 0;
-        let varisCheck = varis.toUpperCase();
-        if (varisCheck.includes("EBEBEK")) {
-            navlun = 3750;
-        } else if (varisCheck.includes("MANGO") || varisCheck.includes("GEBZE")) {
-            navlun = (aracTipi === "KAMYONET") ? 3450 : 3200;
+        // Plaka Map kontrolü (Birleştirme mükerrer satırları engellemek için)
+        if (spotMap.has(plaka_clean)) {
+            let existing = spotMap.get(plaka_clean);
+            let combinedSefer = existing.sefer_upper + " " + sefer_upper;
+            
+            // Fiyatı ve Uğramayı tekrar hesapla
+            let isUgramali = combinedSefer.includes("BİRLEŞTİRME");
+            let ekMaliyet = isUgramali ? 1000 : 0;
+            let ekMaliyetNedeni = isUgramali ? "BİRLEŞTİRME/UĞRAMA" : "YOK";
+            
+            let baseNavlun = 0;
+            if (combinedSefer.includes("EBEBEK")) {
+                baseNavlun = (aracTipi === "KAMYONET") ? 3750 : 2500;
+            } else if (combinedSefer.includes("MANGO") || combinedSefer.includes("GEBZE")) {
+                baseNavlun = (aracTipi === "KAMYONET") ? 3450 : 3200;
+            } else {
+                baseNavlun = (aracTipi === "KAMYONET") ? 2750 : 2500;
+            }
+
+            existing.sefer_upper = combinedSefer;
+            existing.navlun = baseNavlun;
+            existing.ekMaliyet = ekMaliyet;
+            existing.ekMaliyetNedeni = ekMaliyetNedeni;
+            existing.toplam = baseNavlun + ekMaliyet;
+            
+            spotMap.set(plaka_clean, existing);
+            continue; // Satırı atla, zaten mapte güncellendi.
+        }
+
+        // Yeni araç için hesaplamalar
+        let isUgramali = sefer_upper.includes("BİRLEŞTİRME");
+        let ekMaliyet = isUgramali ? 1000 : 0;
+        let ekMaliyetNedeni = isUgramali ? "BİRLEŞTİRME/UĞRAMA" : "YOK";
+
+        let baseNavlun = 0;
+        if (sefer_upper.includes("EBEBEK")) {
+            baseNavlun = (aracTipi === "KAMYONET") ? 3750 : 2500;
+        } else if (sefer_upper.includes("MANGO") || sefer_upper.includes("GEBZE")) {
+            baseNavlun = (aracTipi === "KAMYONET") ? 3450 : 3200;
         } else {
-            navlun = (aracTipi === "KAMYONET") ? 2750 : 2500;
+            baseNavlun = (aracTipi === "KAMYONET") ? 2750 : 2500;
         }
 
         // İrsaliye formati
@@ -98,7 +134,8 @@ function processSpotData() {
         }
         let formatted_irsaliye = irsaliye_clean ? "HJI202600" + irsaliye_clean : "";
 
-        parsedSpotData.push({
+        spotMap.set(plaka_clean, {
+            sefer_upper: sefer_upper,
             bolge: "İSTANBUL ANADOLU",
             tarih: todayStr,
             gorev: "RİNG",
@@ -107,16 +144,17 @@ function processSpotData() {
             varis: varis,
             plaka: plaka_clean,
             aracTipi: aracTipi,
-            navlun: navlun,
+            navlun: baseNavlun,
             seferTipi: "SEFERLİK",
-            ekMaliyet: 0,
-            ekMaliyetNedeni: "YOK",
-            toplam: navlun,
+            ekMaliyet: ekMaliyet,
+            ekMaliyetNedeni: ekMaliyetNedeni,
+            toplam: baseNavlun + ekMaliyet,
             firma: firma,
             irsaliye: formatted_irsaliye
         });
     }
 
+    parsedSpotData = Array.from(spotMap.values());
     renderTable();
 }
 
@@ -142,11 +180,13 @@ function renderTable() {
     let copyTextStr = "BÖLGE\tTARİH\tGÖREV\tÇIKIŞ\tUĞRAMA\tVARIŞ\tPLAKA\tARAÇ TİPİ\tNAVLUN\tSEFER TİPİ\tEK MALİYET\tEK MALİYET NEDENİ\tTOPLAM\tTEDARİKÇİ FİRMA\tİRSALİYE\n";
 
     parsedSpotData.forEach((v) => {
-        totalNavlun += v.navlun;
+        totalNavlun += v.toplam;
         const navlunFormatted = formatNavlun(v.navlun);
+        const ekMaliyetFormatted = formatNavlun(v.ekMaliyet);
+        const toplamFormatted = formatNavlun(v.toplam);
 
         // Kopyalama için TSV formatında satır
-        copyTextStr += `${v.bolge}\t${v.tarih}\t${v.gorev}\t${v.cikis}\t${v.ugrama}\t${v.varis}\t${v.plaka}\t${v.aracTipi}\t${navlunFormatted}\t${v.seferTipi}\t₺ 0,00\t${v.ekMaliyetNedeni}\t${navlunFormatted}\t${v.firma}\t${v.irsaliye}\n`;
+        copyTextStr += `${v.bolge}\t${v.tarih}\t${v.gorev}\t${v.cikis}\t${v.ugrama}\t${v.varis}\t${v.plaka}\t${v.aracTipi}\t${navlunFormatted}\t${v.seferTipi}\t${ekMaliyetFormatted}\t${v.ekMaliyetNedeni}\t${toplamFormatted}\t${v.firma}\t${v.irsaliye}\n`;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -160,9 +200,9 @@ function renderTable() {
             <td><span class="badge-${v.aracTipi === 'KAMYONET' ? 'kamyonet' : 'panelvan'}">${v.aracTipi}</span></td>
             <td class="td-money">${navlunFormatted}</td>
             <td>${v.seferTipi}</td>
-            <td>₺ 0,00</td>
+            <td class="td-money">${ekMaliyetFormatted}</td>
             <td>${v.ekMaliyetNedeni}</td>
-            <td class="td-money">${navlunFormatted}</td>
+            <td class="td-money">${toplamFormatted}</td>
             <td>${v.firma}</td>
             <td class="td-irsaliye">${v.irsaliye}</td>
         `;
