@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧱 Tetris - Aktarma Pro Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a1a;color:#e0e0e0;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+        body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(34,211,238,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.03) 1px,transparent 1px);background-size:30px 30px;z-index:0}
+        .gw{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:14px}
+        .gt{font-family:'Press Start 2P',cursive;font-size:20px;color:#22d3ee;margin-bottom:4px}
+        .gs{font-size:11px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase}
+        .game-area{display:flex;gap:16px;align-items:flex-start}
+        .cw{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(34,211,238,.12);border:2px solid rgba(34,211,238,.2)}
+        canvas{display:block;background:#0d1117}
+        .side-panel{display:flex;flex-direction:column;gap:12px}
+        .panel-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;text-align:center;min-width:120px}
+        .panel-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.35);margin-bottom:6px}
+        .panel-value{font-family:'Press Start 2P',cursive;font-size:16px;color:#22d3ee}
+        .panel-value.high{color:#facc15}
+        .next-canvas{border-radius:8px;border:1px solid rgba(255,255,255,.08);margin:0 auto}
+        .ov{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(10,10,26,.88);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:10;transition:opacity .3s}
+        .ov.hidden{opacity:0;pointer-events:none}
+        .ot{font-family:'Press Start 2P',cursive;font-size:18px;color:#22d3ee}
+        .ot.dead{color:#f87171}
+        .os{font-family:'Press Start 2P',cursive;font-size:11px;color:#facc15}
+        .pb{font-family:'Press Start 2P',cursive;font-size:10px;padding:12px 26px;border:2px solid #22d3ee;background:rgba(34,211,238,.1);color:#22d3ee;border-radius:10px;cursor:pointer;transition:all .2s}
+        .pb:hover{background:rgba(34,211,238,.25);transform:scale(1.05)}
+        .hint{font-size:11px;color:rgba(255,255,255,.3)}
+        .bl{position:fixed;top:16px;left:16px;z-index:100;text-decoration:none;color:rgba(255,255,255,.3);font-size:13px;transition:color .2s}
+        .bl:hover{color:rgba(255,255,255,.7)}
+        .touch-row{display:none;gap:6px;margin-top:8px}
+        .tb{width:50px;height:50px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.08);color:#22d3ee;border-radius:12px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+        .tb:active{background:rgba(34,211,238,.25)}
+        @media(max-width:500px){.touch-row{display:flex;justify-content:center}}
+    </style>
+</head>
+<body>
+<a href="/games" class="bl">← Oyun Salonu</a>
+<div class="gw">
+    <div style="text-align:center"><div class="gt">🧱 TETRİS</div><div class="gs">Aktarma Pro Arcade</div></div>
+    <div class="game-area">
+        <div class="cw">
+            <canvas id="c" width="300" height="600"></canvas>
+            <div class="ov" id="startOv">
+                <div class="ot">🧱 TETRİS</div>
+                <button class="pb" id="startBtn">OYNA</button>
+                <div class="hint">← → Hareket · ↑ Döndür · Space Düşür</div>
+            </div>
+            <div class="ov hidden" id="overOv">
+                <div class="ot dead">OYUN BİTTİ</div>
+                <div class="os" id="finalScore">Skor: 0</div>
+                <button class="pb" id="restartBtn">TEKRAR OYNA</button>
+            </div>
+        </div>
+        <div class="side-panel">
+            <div class="panel-box"><div class="panel-label">Sonraki</div><canvas id="nc" width="100" height="100" class="next-canvas"></canvas></div>
+            <div class="panel-box"><div class="panel-label">Skor</div><div class="panel-value" id="score">0</div></div>
+            <div class="panel-box"><div class="panel-label">Seviye</div><div class="panel-value" id="level">1</div></div>
+            <div class="panel-box"><div class="panel-label">Satır</div><div class="panel-value" id="lines">0</div></div>
+            <div class="panel-box"><div class="panel-label">En Yüksek</div><div class="panel-value high" id="highScore">0</div></div>
+        </div>
+    </div>
+    <div class="touch-row">
+        <button class="tb" onclick="moveP(-1)">←</button>
+        <button class="tb" onclick="rotatePiece()">↻</button>
+        <button class="tb" onclick="hardDrop()">⤓</button>
+        <button class="tb" onclick="moveP(1)">→</button>
+        <button class="tb" onclick="softDrop()">↓</button>
+    </div>
+</div>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+const nc=document.getElementById('nc'),nx=nc.getContext('2d');
+const COLS=10,ROWS=20,B=30;
+
+const COLORS={I:'#22d3ee',O:'#facc15',T:'#a78bfa',S:'#4ade80',Z:'#f87171',J:'#60a5fa',L:'#fb923c'};
+const SHAPES={
+    I:[[0,0],[1,0],[2,0],[3,0]],
+    O:[[0,0],[1,0],[0,1],[1,1]],
+    T:[[0,0],[1,0],[2,0],[1,1]],
+    S:[[1,0],[2,0],[0,1],[1,1]],
+    Z:[[0,0],[1,0],[1,1],[2,1]],
+    J:[[0,0],[0,1],[1,1],[2,1]],
+    L:[[2,0],[0,1],[1,1],[2,1]]
+};
+const TYPES=Object.keys(SHAPES);
+
+let board,current,next,score,highScore,level,linesCleared,dropTimer,dropInterval,running,flashRows;
+highScore=parseInt(localStorage.getItem('tetrisHighScore')||'0');
+document.getElementById('highScore').textContent=highScore;
+
+function newPiece(type){
+    let t=type||TYPES[Math.floor(Math.random()*TYPES.length)];
+    return{type:t,cells:SHAPES[t].map(c=>[...c]),x:3,y:0,color:COLORS[t]};
+}
+
+function init(){
+    board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+    current=newPiece();next=newPiece();
+    score=0;level=1;linesCleared=0;dropInterval=800;flashRows=[];
+    updateUI();drawNext();
+}
+
+function updateUI(){
+    document.getElementById('score').textContent=score;
+    document.getElementById('level').textContent=level;
+    document.getElementById('lines').textContent=linesCleared;
+    if(score>highScore){highScore=score;localStorage.setItem('tetrisHighScore',highScore);document.getElementById('highScore').textContent=highScore;}
+}
+
+function valid(cells,ox,oy){
+    for(let[cx2,cy]of cells){
+        let nx2=cx2+ox,ny=cy+oy;
+        if(nx2<0||nx2>=COLS||ny>=ROWS)return false;
+        if(ny>=0&&board[ny][nx2])return false;
+    }
+    return true;
+}
+
+function rotate(cells){
+    let minX=Infinity,minY=Infinity;
+    for(let[x,y]of cells){minX=Math.min(minX,x);minY=Math.min(minY,y);}
+    let norm=cells.map(([x,y])=>[x-minX,y-minY]);
+    let maxD=Math.max(...norm.map(([x,y])=>Math.max(x,y)))+1;
+    let rot=norm.map(([x,y])=>[maxD-1-y,x]);
+    let rMinX=Math.min(...rot.map(c=>c[0])),rMinY=Math.min(...rot.map(c=>c[1]));
+    return rot.map(([x,y])=>[x-rMinX,y-rMinY]);
+}
+
+function rotatePiece(){
+    if(!running)return;
+    if(current.type==='O')return;
+    let newCells=rotate(current.cells);
+    if(valid(newCells,current.x,current.y)){current.cells=newCells;}
+    else if(valid(newCells,current.x-1,current.y)){current.cells=newCells;current.x--;}
+    else if(valid(newCells,current.x+1,current.y)){current.cells=newCells;current.x++;}
+}
+
+function moveP(dir){
+    if(!running)return;
+    if(valid(current.cells,current.x+dir,current.y))current.x+=dir;
+}
+
+function softDrop(){
+    if(!running)return;
+    if(valid(current.cells,current.x,current.y+1)){current.y++;score+=1;updateUI();}
+    else lock();
+}
+
+function hardDrop(){
+    if(!running)return;
+    while(valid(current.cells,current.x,current.y+1)){current.y++;score+=2;}
+    updateUI();lock();
+}
+
+function ghostY(){
+    let gy=current.y;
+    while(valid(current.cells,current.x,gy+1))gy++;
+    return gy;
+}
+
+function lock(){
+    for(let[cx2,cy]of current.cells){
+        let bx=cx2+current.x,by=cy+current.y;
+        if(by<0){die();return;}
+        board[by][bx]=current.color;
+    }
+    // Check lines
+    let cleared=[];
+    for(let r=ROWS-1;r>=0;r--){
+        if(board[r].every(c=>c!==null))cleared.push(r);
+    }
+    if(cleared.length>0){
+        flashRows=cleared;
+        let pts=[0,100,300,500,800];
+        score+=pts[cleared.length]*level;
+        linesCleared+=cleared.length;
+        level=Math.floor(linesCleared/10)+1;
+        dropInterval=Math.max(100,800-level*60);
+        // Remove rows
+        setTimeout(()=>{
+            for(let r of cleared.sort((a,b)=>a-b)){
+                board.splice(r,1);
+                board.unshift(Array(COLS).fill(null));
+            }
+            flashRows=[];
+        },200);
+    }
+    current=next;next=newPiece();
+    updateUI();drawNext();
+}
+
+function drawNext(){
+    nx.fillStyle='#0d1117';nx.fillRect(0,0,100,100);
+    let nb=20;
+    let cells=SHAPES[next.type];
+    let maxX=Math.max(...cells.map(c=>c[0]))+1;
+    let maxY=Math.max(...cells.map(c=>c[1]))+1;
+    let ox=(100-maxX*nb)/2,oy=(100-maxY*nb)/2;
+    nx.save();nx.shadowColor=COLORS[next.type];nx.shadowBlur=6;
+    nx.fillStyle=COLORS[next.type];
+    for(let[x,y]of cells){
+        nx.beginPath();nx.roundRect(ox+x*nb+1,oy+y*nb+1,nb-2,nb-2,3);nx.fill();
+    }
+    nx.restore();
+}
+
+function draw(){
+    cx.fillStyle='#0d1117';cx.fillRect(0,0,cv.width,cv.height);
+    // Grid
+    cx.strokeStyle='rgba(255,255,255,0.03)';cx.lineWidth=1;
+    for(let r=0;r<=ROWS;r++){cx.beginPath();cx.moveTo(0,r*B);cx.lineTo(COLS*B,r*B);cx.stroke();}
+    for(let c=0;c<=COLS;c++){cx.beginPath();cx.moveTo(c*B,0);cx.lineTo(c*B,ROWS*B);cx.stroke();}
+    // Board
+    for(let r=0;r<ROWS;r++){
+        for(let c=0;c<COLS;c++){
+            if(board[r][c]){
+                let flash=flashRows.includes(r);
+                cx.save();
+                cx.shadowColor=flash?'#fff':board[r][c];cx.shadowBlur=flash?12:4;
+                cx.fillStyle=flash?'#fff':board[r][c];
+                cx.beginPath();cx.roundRect(c*B+1,r*B+1,B-2,B-2,3);cx.fill();
+                cx.restore();
+            }
+        }
+    }
+    if(!running)return;
+    // Ghost
+    let gy=ghostY();
+    cx.globalAlpha=0.15;
+    cx.fillStyle=current.color;
+    for(let[px,py]of current.cells){
+        cx.beginPath();cx.roundRect((px+current.x)*B+1,(py+gy)*B+1,B-2,B-2,3);cx.fill();
+    }
+    cx.globalAlpha=1;
+    // Current
+    cx.save();cx.shadowColor=current.color;cx.shadowBlur=8;
+    cx.fillStyle=current.color;
+    for(let[px,py]of current.cells){
+        cx.beginPath();cx.roundRect((px+current.x)*B+1,(py+current.y)*B+1,B-2,B-2,3);cx.fill();
+    }
+    cx.restore();
+}
+
+function die(){
+    running=false;
+    document.getElementById('finalScore').textContent='Skor: '+score;
+    document.getElementById('overOv').classList.remove('hidden');
+}
+
+let lastDrop=0;
+function loop(ts){
+    if(!running){draw();return;}
+    if(ts-lastDrop>dropInterval){softDrop();lastDrop=ts;}
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function start(){
+    init();
+    document.getElementById('startOv').classList.add('hidden');
+    document.getElementById('overOv').classList.add('hidden');
+    running=true;lastDrop=performance.now();
+    requestAnimationFrame(loop);
+}
+
+document.getElementById('startBtn').addEventListener('click',start);
+document.getElementById('restartBtn').addEventListener('click',start);
+
+document.addEventListener('keydown',e=>{
+    if(!running)return;
+    switch(e.key){
+        case'ArrowLeft':case'a':case'A':moveP(-1);break;
+        case'ArrowRight':case'd':case'D':moveP(1);break;
+        case'ArrowDown':case's':case'S':softDrop();break;
+        case'ArrowUp':case'w':case'W':rotatePiece();break;
+        case' ':hardDrop();break;
+    }
+    e.preventDefault();
+});
+
+if('ontouchstart'in window)document.querySelector('.touch-row').style.display='flex';
+</script>
+</body>
+</html>

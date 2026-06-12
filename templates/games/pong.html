@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏓 Pong - Aktarma Pro Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a1a;color:#e0e0e0;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+        body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(251,146,60,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(251,146,60,.03) 1px,transparent 1px);background-size:30px 30px;z-index:0}
+        .gw{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:14px}
+        .gt{font-family:'Press Start 2P',cursive;font-size:22px;color:#fb923c;margin-bottom:4px}
+        .gs{font-size:11px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase}
+        .cw{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(251,146,60,.12);border:2px solid rgba(251,146,60,.2)}
+        canvas{display:block;background:#0d1117}
+        .ov{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(10,10,26,.88);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:10;transition:opacity .3s}
+        .ov.hidden{opacity:0;pointer-events:none}
+        .ot{font-family:'Press Start 2P',cursive;font-size:18px;color:#fb923c}
+        .ot.win{color:#4ade80}
+        .ot.lose{color:#f87171}
+        .os{font-family:'Press Start 2P',cursive;font-size:11px;color:#facc15}
+        .pb{font-family:'Press Start 2P',cursive;font-size:10px;padding:12px 26px;border:2px solid #fb923c;background:rgba(251,146,60,.1);color:#fb923c;border-radius:10px;cursor:pointer;transition:all .2s}
+        .pb:hover{background:rgba(251,146,60,.25);transform:scale(1.05);box-shadow:0 0 18px rgba(251,146,60,.3)}
+        .hint{font-size:11px;color:rgba(255,255,255,.3)}
+        .bl{position:fixed;top:16px;left:16px;z-index:100;text-decoration:none;color:rgba(255,255,255,.3);font-size:13px;transition:color .2s}
+        .bl:hover{color:rgba(255,255,255,.7)}
+        .stat{font-size:11px;color:rgba(255,255,255,.25);margin-top:4px}
+    </style>
+</head>
+<body>
+<a href="/games" class="bl">← Oyun Salonu</a>
+<div class="gw">
+    <div style="text-align:center"><div class="gt">🏓 PONG</div><div class="gs">Aktarma Pro Arcade</div></div>
+    <div class="cw">
+        <canvas id="c" width="600" height="400"></canvas>
+        <div class="ov" id="startOv">
+            <div class="ot">🏓 PONG VS AI</div>
+            <button class="pb" id="startBtn">OYNA</button>
+            <div class="hint">↑ ↓ veya W S ile hareket et · İlk 11'e ulaşan kazanır</div>
+        </div>
+        <div class="ov hidden" id="overOv">
+            <div class="ot" id="winTitle">KAZANDIN!</div>
+            <div class="os" id="finalScore">11 - 5</div>
+            <button class="pb" id="restartBtn">TEKRAR OYNA</button>
+        </div>
+    </div>
+    <div class="stat" id="stat"></div>
+</div>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+const W=600,H=400;
+const PW=12,PH=70,BALL_R=8,WIN_SCORE=11;
+
+let p1,p2,ball,trail,particles,p1Score,p2Score,running,serving,serveTimer;
+let p1Dir=0;
+let totalWins=parseInt(localStorage.getItem('pongWins')||'0');
+updateStat();
+
+function init(){
+    p1={x:20,y:H/2-PH/2};
+    p2={x:W-20-PW,y:H/2-PH/2};
+    p1Score=0;p2Score=0;
+    trail=[];particles=[];
+    serve(1);
+}
+
+function serve(dir){
+    let angle=(Math.random()*0.8-0.4);
+    let spd=5;
+    ball={x:W/2,y:H/2,vx:spd*dir*Math.cos(angle),vy:spd*Math.sin(angle)};
+    trail=[];serving=true;serveTimer=40;
+}
+
+function updateStat(){
+    let el=document.getElementById('stat');
+    if(totalWins>0)el.textContent='Toplam galibiyet: '+totalWins;
+}
+
+function update(){
+    if(serving){serveTimer--;if(serveTimer<=0)serving=false;return;}
+    // Ball
+    ball.x+=ball.vx;ball.y+=ball.vy;
+    // Trail
+    trail.push({x:ball.x,y:ball.y});
+    if(trail.length>8)trail.shift();
+    // Walls
+    if(ball.y-BALL_R<=0||ball.y+BALL_R>=H){ball.vy*=-1;ball.y=ball.y-BALL_R<=0?BALL_R:H-BALL_R;}
+    // Paddle collision - P1
+    if(ball.vx<0&&ball.x-BALL_R<=p1.x+PW&&ball.x-BALL_R>=p1.x&&ball.y>=p1.y&&ball.y<=p1.y+PH){
+        let rel=(ball.y-(p1.y+PH/2))/(PH/2);
+        let angle=rel*Math.PI/3;
+        let spd=Math.sqrt(ball.vx*ball.vx+ball.vy*ball.vy)+0.15;
+        ball.vx=spd*Math.cos(angle);ball.vy=spd*Math.sin(angle);
+        ball.x=p1.x+PW+BALL_R;
+        spawnHitParticles(ball.x,ball.y,'#fb923c');
+    }
+    // Paddle collision - P2
+    if(ball.vx>0&&ball.x+BALL_R>=p2.x&&ball.x+BALL_R<=p2.x+PW&&ball.y>=p2.y&&ball.y<=p2.y+PH){
+        let rel=(ball.y-(p2.y+PH/2))/(PH/2);
+        let angle=Math.PI-rel*Math.PI/3;
+        let spd=Math.sqrt(ball.vx*ball.vx+ball.vy*ball.vy)+0.15;
+        ball.vx=-spd*Math.abs(Math.cos(angle));ball.vy=spd*Math.sin(angle);
+        ball.x=p2.x-BALL_R;
+        spawnHitParticles(ball.x,ball.y,'#60a5fa');
+    }
+    // Score
+    if(ball.x<-20){p2Score++;checkWin();serve(1);}
+    if(ball.x>W+20){p1Score++;checkWin();serve(-1);}
+    // Player
+    p1.y+=p1Dir*6;
+    p1.y=Math.max(0,Math.min(H-PH,p1.y));
+    // AI
+    let aiTarget=ball.y-PH/2;
+    let aiSpeed=3.5;
+    if(p2.y<aiTarget-4)p2.y+=aiSpeed;
+    else if(p2.y>aiTarget+4)p2.y-=aiSpeed;
+    p2.y=Math.max(0,Math.min(H-PH,p2.y));
+    // Particles
+    for(let i=particles.length-1;i>=0;i--){
+        let p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life--;
+        if(p.life<=0)particles.splice(i,1);
+    }
+}
+
+function spawnHitParticles(x,y,color){
+    for(let i=0;i<8;i++){
+        particles.push({x,y,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,life:12,color,size:2+Math.random()*3});
+    }
+}
+
+function checkWin(){
+    if(p1Score>=WIN_SCORE){endGame(true);}
+    else if(p2Score>=WIN_SCORE){endGame(false);}
+}
+
+function endGame(playerWon){
+    running=false;
+    let title=document.getElementById('winTitle');
+    if(playerWon){
+        title.textContent='🎉 KAZANDIN!';title.className='ot win';
+        totalWins++;localStorage.setItem('pongWins',totalWins);updateStat();
+    }else{
+        title.textContent='😢 KAYBETTİN';title.className='ot lose';
+    }
+    document.getElementById('finalScore').textContent=p1Score+' - '+p2Score;
+    document.getElementById('overOv').classList.remove('hidden');
+}
+
+function draw(){
+    cx.fillStyle='#0d1117';cx.fillRect(0,0,W,H);
+    // Center line
+    cx.strokeStyle='rgba(255,255,255,0.06)';cx.lineWidth=2;cx.setLineDash([10,10]);
+    cx.beginPath();cx.moveTo(W/2,0);cx.lineTo(W/2,H);cx.stroke();
+    cx.setLineDash([]);
+    // Scores
+    cx.font='28px "Press Start 2P"';cx.textAlign='center';cx.fillStyle='rgba(255,255,255,0.12)';
+    cx.fillText(p1Score,W/2-60,50);cx.fillText(p2Score,W/2+60,50);
+    // Trail
+    for(let i=0;i<trail.length;i++){
+        let a=(i+1)/trail.length*0.3;
+        cx.globalAlpha=a;
+        cx.fillStyle='#fb923c';
+        cx.beginPath();cx.arc(trail[i].x,trail[i].y,BALL_R*(0.5+a),0,Math.PI*2);cx.fill();
+    }
+    cx.globalAlpha=1;
+    // Ball
+    cx.save();cx.shadowColor='#fb923c';cx.shadowBlur=16;
+    cx.fillStyle='#fb923c';cx.beginPath();cx.arc(ball.x,ball.y,BALL_R,0,Math.PI*2);cx.fill();
+    cx.restore();
+    // Paddles
+    cx.save();
+    cx.shadowColor='#fb923c';cx.shadowBlur=10;cx.fillStyle='#fb923c';
+    cx.beginPath();cx.roundRect(p1.x,p1.y,PW,PH,4);cx.fill();
+    cx.shadowColor='#60a5fa';cx.fillStyle='#60a5fa';
+    cx.beginPath();cx.roundRect(p2.x,p2.y,PW,PH,4);cx.fill();
+    cx.restore();
+    // Particles
+    for(let p of particles){
+        cx.globalAlpha=p.life/12;cx.fillStyle=p.color;
+        cx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+    }
+    cx.globalAlpha=1;
+}
+
+function loop(){if(!running)return;update();draw();requestAnimationFrame(loop);}
+
+function start(){
+    init();
+    document.getElementById('startOv').classList.add('hidden');
+    document.getElementById('overOv').classList.add('hidden');
+    running=true;loop();
+}
+
+document.getElementById('startBtn').addEventListener('click',start);
+document.getElementById('restartBtn').addEventListener('click',start);
+
+document.addEventListener('keydown',e=>{
+    if(!running)return;
+    if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')p1Dir=-1;
+    if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')p1Dir=1;
+    e.preventDefault();
+});
+document.addEventListener('keyup',e=>{
+    if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'){if(p1Dir===-1)p1Dir=0;}
+    if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){if(p1Dir===1)p1Dir=0;}
+});
+// Touch/Mouse
+let touching=false;
+cv.addEventListener('touchstart',e=>{touching=true;},{passive:true});
+cv.addEventListener('touchmove',e=>{
+    if(!running||!touching)return;
+    let rect=cv.getBoundingClientRect();
+    let ty=e.touches[0].clientY-rect.top;
+    let scale=H/rect.height;
+    p1.y=ty*scale-PH/2;
+    p1.y=Math.max(0,Math.min(H-PH,p1.y));
+},{passive:true});
+cv.addEventListener('touchend',()=>{touching=false;},{passive:true});
+cv.addEventListener('mousemove',e=>{
+    if(!running)return;
+    let rect=cv.getBoundingClientRect();
+    let my=e.clientY-rect.top;
+    let scale=H/rect.height;
+    p1.y=my*scale-PH/2;
+    p1.y=Math.max(0,Math.min(H-PH,p1.y));
+});
+</script>
+</body>
+</html>

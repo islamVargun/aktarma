@@ -260,13 +260,38 @@ def saat_giris():
 
 
 # ─────────────────────────────────────────────
-# YILAN OYUNU (Easter Egg 🐍)
+# OYUN SALONU (Game Arcade 🎮)
 # ─────────────────────────────────────────────
+
+@app.route("/games")
+def games_hub():
+    """Oyun salonu ana sayfası"""
+    return render_template("games.html")
+
+@app.route("/games/snake")
+def game_snake():
+    return render_template("games/snake.html")
+
+@app.route("/games/dino")
+def game_dino():
+    return render_template("games/dino.html")
+
+@app.route("/games/car")
+def game_car():
+    return render_template("games/car.html")
+
+@app.route("/games/tetris")
+def game_tetris():
+    return render_template("games/tetris.html")
+
+@app.route("/games/pong")
+def game_pong():
+    return render_template("games/pong.html")
 
 @app.route("/snack")
 def snack_game():
-    """Gizli yılan oyunu sayfası"""
-    return render_template("snack.html")
+    """Eski yılan linki — yönlendir"""
+    return redirect(url_for("game_snake"))
 
 
 # ─────────────────────────────────────────────

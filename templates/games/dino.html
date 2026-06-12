@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦕 Dino Koşusu - Aktarma Pro Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a1a;color:#e0e0e0;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+        body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(129,140,248,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(129,140,248,.03) 1px,transparent 1px);background-size:30px 30px;z-index:0}
+        .game-wrapper{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:16px}
+        .game-header{text-align:center}
+        .game-title{font-family:'Press Start 2P',cursive;font-size:22px;color:#818cf8;margin-bottom:6px}
+        .game-subtitle{font-size:12px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase}
+        .score-board{display:flex;gap:24px}
+        .score-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 20px;text-align:center;min-width:110px}
+        .score-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.35);margin-bottom:3px}
+        .score-value{font-family:'Press Start 2P',cursive;font-size:18px;color:#818cf8}
+        .score-value.high{color:#facc15}
+        .canvas-wrapper{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(129,140,248,.12);border:2px solid rgba(129,140,248,.2)}
+        canvas{display:block;background:#0d1117}
+        .game-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(10,10,26,.88);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:10;transition:opacity .3s}
+        .game-overlay.hidden{opacity:0;pointer-events:none}
+        .overlay-title{font-family:'Press Start 2P',cursive;font-size:20px;color:#818cf8}
+        .overlay-title.dead{color:#f87171}
+        .overlay-score{font-family:'Press Start 2P',cursive;font-size:12px;color:#facc15}
+        .play-btn{font-family:'Press Start 2P',cursive;font-size:11px;padding:12px 28px;border:2px solid #818cf8;background:rgba(129,140,248,.1);color:#818cf8;border-radius:10px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+        .play-btn:hover{background:rgba(129,140,248,.25);transform:scale(1.05);box-shadow:0 0 18px rgba(129,140,248,.3)}
+        .hint{font-size:11px;color:rgba(255,255,255,.3)}
+        .back-link{position:fixed;top:16px;left:16px;z-index:100;text-decoration:none;color:rgba(255,255,255,.3);font-size:13px;transition:color .2s}
+        .back-link:hover{color:rgba(255,255,255,.7)}
+        @media(max-width:650px){canvas{width:100vw;height:auto}.game-title{font-size:16px}}
+    </style>
+</head>
+<body>
+<a href="/games" class="back-link">← Oyun Salonu</a>
+<div class="game-wrapper">
+    <div class="game-header">
+        <div class="game-title">🦕 DİNO KOŞUSU</div>
+        <div class="game-subtitle">Aktarma Pro Arcade</div>
+    </div>
+    <div class="score-board">
+        <div class="score-item"><div class="score-label">Skor</div><div class="score-value" id="score">0</div></div>
+        <div class="score-item"><div class="score-label">En Yüksek</div><div class="score-value high" id="highScore">0</div></div>
+    </div>
+    <div class="canvas-wrapper">
+        <canvas id="c" width="600" height="200"></canvas>
+        <div class="game-overlay" id="startOverlay">
+            <div class="overlay-title">🦕 DİNO KOŞUSU</div>
+            <button class="play-btn" id="startBtn">OYNA</button>
+            <div class="hint">Space / ↑ / Dokunma ile zıpla</div>
+        </div>
+        <div class="game-overlay hidden" id="overOverlay">
+            <div class="overlay-title dead">ÇARPTIN!</div>
+            <div class="overlay-score" id="finalScore">Skor: 0</div>
+            <button class="play-btn" id="restartBtn">TEKRAR OYNA</button>
+        </div>
+    </div>
+</div>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+const W=cv.width,H=cv.height,GROUND=H-30;
+let dino,obstacles,particles,score,highScore,speed,frame,running,gameOver;
+highScore=parseInt(localStorage.getItem('dinoHighScore')||'0');
+document.getElementById('highScore').textContent=highScore;
+
+function init(){
+    dino={x:60,y:GROUND,w:30,h:34,vy:0,jumping:false,ducking:false};
+    obstacles=[];particles=[];score=0;speed=4;frame=0;gameOver=false;
+    document.getElementById('score').textContent='0';
+}
+
+function jump(){
+    if(!dino.jumping){dino.jumping=true;dino.vy=-11;}
+}
+
+function spawnObs(){
+    let h=20+Math.random()*20, w=12+Math.random()*10;
+    let isFlying=score>300&&Math.random()<0.25;
+    obstacles.push({x:W+20,y:isFlying?GROUND-50-Math.random()*30:GROUND,w:w,h:isFlying?16:h,flying:isFlying});
+}
+
+function update(){
+    frame++;
+    // Dino physics
+    if(dino.jumping){
+        dino.vy+=0.6;
+        dino.y+=dino.vy;
+        if(dino.y>=GROUND){dino.y=GROUND;dino.jumping=false;dino.vy=0;}
+    }
+    // Obstacles
+    if(frame%Math.max(40,80-Math.floor(score/50))===0)spawnObs();
+    for(let i=obstacles.length-1;i>=0;i--){
+        obstacles[i].x-=speed;
+        if(obstacles[i].x+obstacles[i].w<0){obstacles.splice(i,1);continue;}
+        // Collision
+        let o=obstacles[i];
+        let dx=dino.x,dy=dino.y-dino.h,dw=dino.w,dh=dino.h;
+        if(dx<o.x+o.w&&dx+dw>o.x&&dy<o.y&&dy+dh>o.y-o.h){
+            die();return;
+        }
+    }
+    // Dust particles
+    if(!dino.jumping&&frame%3===0){
+        particles.push({x:dino.x,y:GROUND,vx:-1-Math.random(),vy:-Math.random()*1.5,life:15,size:2+Math.random()*2});
+    }
+    for(let i=particles.length-1;i>=0;i--){
+        let p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life--;
+        if(p.life<=0)particles.splice(i,1);
+    }
+    // Score
+    if(frame%6===0){score++;document.getElementById('score').textContent=score;
+        if(score>highScore){highScore=score;localStorage.setItem('dinoHighScore',highScore);document.getElementById('highScore').textContent=highScore;}
+    }
+    // Speed up
+    speed=4+score*0.008;
+}
+
+function draw(){
+    let night=Math.floor(score/500)%2===1;
+    cx.fillStyle=night?'#06060f':'#0d1117';
+    cx.fillRect(0,0,W,H);
+    // Ground
+    cx.strokeStyle='rgba(129,140,248,0.2)';cx.lineWidth=1;
+    cx.beginPath();cx.moveTo(0,GROUND);cx.lineTo(W,GROUND);cx.stroke();
+    // Ground details
+    cx.fillStyle='rgba(129,140,248,0.08)';
+    for(let i=0;i<20;i++){
+        let gx=(i*40-frame*speed*0.3)%W;
+        if(gx<0)gx+=W;
+        cx.fillRect(gx,GROUND+4,12,2);
+    }
+    // Stars at night
+    if(night){
+        cx.fillStyle='rgba(255,255,255,0.4)';
+        for(let i=0;i<12;i++){
+            let sx=(i*53+17)%W,sy=(i*37+11)%100;
+            cx.fillRect(sx,sy,2,2);
+        }
+    }
+    // Dino
+    cx.save();
+    cx.shadowColor='#818cf8';cx.shadowBlur=8;
+    cx.fillStyle='#818cf8';
+    let dy=dino.y-dino.h;
+    // Body
+    cx.fillRect(dino.x+4,dy,22,20);
+    // Head
+    cx.fillRect(dino.x+14,dy-10,16,14);
+    // Eye
+    cx.fillStyle='#fff';cx.fillRect(dino.x+24,dy-6,4,4);
+    cx.fillStyle='#0d1117';cx.fillRect(dino.x+26,dy-5,2,2);
+    // Legs (animated)
+    cx.fillStyle='#818cf8';
+    if(dino.jumping){
+        cx.fillRect(dino.x+6,dy+20,5,10);cx.fillRect(dino.x+16,dy+20,5,10);
+    }else{
+        let legOff=Math.sin(frame*0.3)*4;
+        cx.fillRect(dino.x+6,dy+20,5,10+legOff);cx.fillRect(dino.x+16,dy+20,5,10-legOff);
+    }
+    // Tail
+    cx.fillRect(dino.x-4,dy+4,8,6);
+    cx.restore();
+    // Obstacles
+    for(let o of obstacles){
+        cx.save();
+        cx.shadowColor=o.flying?'#f472b6':'#4ade80';cx.shadowBlur=6;
+        cx.fillStyle=o.flying?'#f472b6':'#4ade80';
+        if(o.flying){
+            // Pterodactyl
+            cx.fillRect(o.x,o.y-o.h,o.w,o.h);
+            cx.fillRect(o.x-6,o.y-o.h-4+Math.sin(frame*0.2)*3,o.w+12,4);
+        }else{
+            // Cactus
+            cx.fillRect(o.x,o.y-o.h,o.w,o.h);
+            cx.fillRect(o.x-4,o.y-o.h*0.6,4,8);
+            cx.fillRect(o.x+o.w,o.y-o.h*0.7,4,8);
+        }
+        cx.restore();
+    }
+    // Particles
+    for(let p of particles){
+        cx.globalAlpha=p.life/15;
+        cx.fillStyle='rgba(129,140,248,0.6)';
+        cx.fillRect(p.x,p.y,p.size,p.size);
+    }
+    cx.globalAlpha=1;
+    // Scan lines
+    cx.fillStyle='rgba(0,0,0,0.03)';
+    for(let i=0;i<H;i+=2)cx.fillRect(0,i,W,1);
+}
+
+function die(){
+    gameOver=true;running=false;
+    document.getElementById('finalScore').textContent='Skor: '+score;
+    document.getElementById('overOverlay').classList.remove('hidden');
+    // Screen shake
+    cv.style.transform='translateX(4px)';
+    setTimeout(()=>cv.style.transform='translateX(-4px)',50);
+    setTimeout(()=>cv.style.transform='translateX(2px)',100);
+    setTimeout(()=>cv.style.transform='',150);
+}
+
+function loop(){
+    if(!running)return;
+    update();draw();
+    requestAnimationFrame(loop);
+}
+
+function start(){
+    init();
+    document.getElementById('startOverlay').classList.add('hidden');
+    document.getElementById('overOverlay').classList.add('hidden');
+    running=true;loop();
+}
+
+document.getElementById('startBtn').addEventListener('click',start);
+document.getElementById('restartBtn').addEventListener('click',start);
+
+document.addEventListener('keydown',e=>{
+    if(!running)return;
+    if(e.code==='Space'||e.code==='ArrowUp'||e.key==='w'||e.key==='W'){jump();e.preventDefault();}
+});
+cv.addEventListener('touchstart',e=>{if(running){jump();e.preventDefault();}},{passive:false});
+cv.addEventListener('click',()=>{if(running)jump();});
+</script>
+</body>
+</html>
